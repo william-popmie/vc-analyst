@@ -5,8 +5,8 @@
   --paper: #f6f4ee;
   --paper-2: #efece2;
   --ink: #14130f;
-  --muted: #6b675c;
-  --accent: #1f6f43;
+  --muted: #54514a;
+  --accent: #1a6b3f;
   --accent-bright: #34d17a;
   --marker: #d6f56b;
 }
@@ -60,21 +60,9 @@ html, body {
 }
 .fade-up { animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
-/* Animated dashed border for the dropzone */
-@keyframes dash-spin {
-  to { background-position: 200% 0, -200% 0, 0 200%, 0 -200%; }
+/* SVG dashed-border march for the dropzone (set on the <rect>) */
+@keyframes dash-march {
+  to { stroke-dashoffset: -28; }
 }
-.dropzone-border {
-  background-image:
-    repeating-linear-gradient(90deg, var(--ink) 0 8px, transparent 8px 16px),
-    repeating-linear-gradient(90deg, var(--ink) 0 8px, transparent 8px 16px),
-    repeating-linear-gradient(0deg, var(--ink) 0 8px, transparent 8px 16px),
-    repeating-linear-gradient(0deg, var(--ink) 0 8px, transparent 8px 16px);
-  background-size: 200% 2px, 200% 2px, 2px 200%, 2px 200%;
-  background-position: 0 0, 0 100%, 0 0, 100% 0;
-  background-repeat: no-repeat;
-}
-.dropzone-border.dragging,
-.dropzone-border:hover {
-  animation: dash-spin 12s linear infinite;
-}
+.dash-rect { transition: stroke 0.2s ease; }
+.dash-active .dash-rect { animation: dash-march 1.2s linear infinite; }
