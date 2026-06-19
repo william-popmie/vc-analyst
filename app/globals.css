@@ -1,0 +1,80 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+:root {
+  --paper: #f6f4ee;
+  --paper-2: #efece2;
+  --ink: #14130f;
+  --muted: #6b675c;
+  --accent: #1f6f43;
+  --accent-bright: #34d17a;
+  --marker: #d6f56b;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-marker: var(--marker);
+  --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-instrument-serif);
+  --font-mono: var(--font-geist-mono);
+}
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Floating gradient orbs */
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -40px) scale(1.08); }
+}
+@keyframes float-slow-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-40px, 30px) scale(1.12); }
+}
+.orb { position: fixed; border-radius: 9999px; filter: blur(70px); opacity: 0.5; pointer-events: none; z-index: 0; }
+.orb-1 { animation: float-slow 14s ease-in-out infinite; }
+.orb-2 { animation: float-slow-2 18s ease-in-out infinite; }
+
+/* Highlighter marker reveal */
+@keyframes marker-in {
+  from { background-size: 0% 100%; }
+  to { background-size: 100% 100%; }
+}
+.marker {
+  background-image: linear-gradient(transparent 58%, var(--marker) 58%, var(--marker) 92%, transparent 92%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  animation: marker-in 0.9s 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  padding: 0 0.1em;
+}
+
+/* Fade-up entrance */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Animated dashed border for the dropzone */
+@keyframes dash-spin {
+  to { background-position: 200% 0, -200% 0, 0 200%, 0 -200%; }
+}
+.dropzone-border {
+  background-image:
+    repeating-linear-gradient(90deg, var(--ink) 0 8px, transparent 8px 16px),
+    repeating-linear-gradient(90deg, var(--ink) 0 8px, transparent 8px 16px),
+    repeating-linear-gradient(0deg, var(--ink) 0 8px, transparent 8px 16px),
+    repeating-linear-gradient(0deg, var(--ink) 0 8px, transparent 8px 16px);
+  background-size: 200% 2px, 200% 2px, 2px 200%, 2px 200%;
+  background-position: 0 0, 0 100%, 0 0, 100% 0;
+  background-repeat: no-repeat;
+}
+.dropzone-border.dragging,
+.dropzone-border:hover {
+  animation: dash-spin 12s linear infinite;
+}
