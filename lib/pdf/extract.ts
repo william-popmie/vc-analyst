@@ -1,21 +1,44 @@
 import { EmptyDeckError } from "@/lib/diligence/types";
+import { DECK_TEXT_EXTRACTORS } from "@/lib/pdf/extractors";
 
+/** Minimum characters for a deck to count as "readable" rather than empty. */
 const MIN_DECK_CHARS = 80;
 
 /**
- * Extract text from a pitch-deck PDF buffer. Uses unpdf, which ships a
- * serverless/Node-compatible pdf.js build (no DOM / DOMMatrix needed).
- * Throws EmptyDeckError when the result is too short (image-only / scanned
- * decks) so the UI can show a friendly message instead of feeding noise.
+ * Turn a pitch-deck PDF buffer into the plain `deckText` the pipeline expects.
+ *
+ * This is the single seam between the user's upload and the diligence pipeline.
+ * It runs each registered extraction strategy in order (fast native text first,
+ * Claude vision OCR as a fallback for image-only / scanned decks) and returns
+ * the first result that has enough text. A strategy that throws is logged and
+ * skipped, so one broken path never blocks the others. Only when every strategy
+ * comes up empty do we throw EmptyDeckError for the UI to surface.
+ *
+ * The pipeline downstream is untouched — it still just receives a string.
  */
 export async function extractDeckText(buffer: Buffer): Promise<string> {
-  const { extractText, getDocumentProxy } = await import("unpdf");
-  const pdf = await getDocumentProxy(new Uint8Array(buffer));
-  const { text } = await extractText(pdf, { mergePages: true });
+  let lastError: unknown;
 
-  const cleaned = (Array.isArray(text) ? text.join("\n") : text).trim();
-  if (cleaned.length < MIN_DECK_CHARS) {
-    throw new EmptyDeckError();
+  for (const extractor of DECK_TEXT_EXTRACTORS) {
+    try {
+      const text = await extractor.extract(buffer);
+      if (text.length >= MIN_DECK_CHARS) {
+        return text;
+      }
+    } catch (err) {
+      // A failing strategy shouldn't break the chain — log and try the next.
+      // But remember it: a systemic failure (no API credits, rate limit, network)
+      // must not masquerade as an "image-only deck" if nothing else produces text.
+      console.warn(`[pdf] extractor "${extractor.name}" failed:`, err);
+      lastError = err;
+    }
   }
-  return cleaned;
+
+  // Every strategy either returned too little text or failed. If a strategy
+  // actually errored, surface that real cause; only when all strategies cleanly
+  // came up empty is the deck genuinely unreadable.
+  if (lastError) {
+    throw lastError;
+  }
+  throw new EmptyDeckError();
 }

@@ -8,6 +8,11 @@
 // supports the native web_search tool with dynamic filtering.
 export const MODEL_ID = "claude-sonnet-4-6";
 
+// Model used only to OCR/transcribe image-only PDFs into text before they enter
+// the pipeline. Transcription is a simpler task than the diligence research, so
+// a fast model keeps this preprocessing step cheap and quick.
+export const OCR_MODEL_ID = "claude-sonnet-4-6";
+
 export function getAnthropicApiKey(): string {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
