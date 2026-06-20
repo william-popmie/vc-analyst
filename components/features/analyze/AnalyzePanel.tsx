@@ -3,48 +3,52 @@
 import { useState } from "react";
 import Dropzone from "@/components/ui/Dropzone";
 import ReportView from "@/components/features/report/ReportView";
+import { readProgressStream } from "@/lib/diligence/stream";
 import type { DueDiligenceReport } from "@/lib/diligence/types";
 
 type Status = "idle" | "loading" | "done" | "error";
-
-const LOADING_STEPS = [
-  "Reading your deck…",
-  "Researching the founders…",
-  "Mapping the competitive landscape…",
-  "Pressure-testing the market…",
-  "Writing the diligence memo…",
-];
 
 export default function AnalyzePanel() {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [report, setReport] = useState<DueDiligenceReport | null>(null);
   const [error, setError] = useState<string>("");
-  const [step, setStep] = useState(0);
+  const [progress, setProgress] = useState<string>("");
 
   async function analyze() {
     if (!file) return;
     setStatus("loading");
     setError("");
     setReport(null);
-    setStep(0);
-
-    // Cycle the loading copy while we wait on the research.
-    const timer = setInterval(() => setStep((s) => (s + 1) % LOADING_STEPS.length), 3500);
+    setProgress("Uploading your deck…");
 
     try {
       const body = new FormData();
       body.append("file", file);
       const res = await fetch("/api/analyze", { method: "POST", body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Analysis failed.");
-      setReport(data as DueDiligenceReport);
+      if (!res.body) throw new Error("No response stream.");
+
+      let finalReport: DueDiligenceReport | null = null;
+
+      // Consume the NDJSON progress stream until a terminal event arrives.
+      for await (const event of readProgressStream(res.body)) {
+        if (event.type === "status") {
+          setProgress(event.message + "…");
+        } else if (event.type === "search") {
+          setProgress(`Searching: ${event.query}`);
+        } else if (event.type === "report") {
+          finalReport = event.report;
+        } else if (event.type === "error") {
+          throw new Error(event.message);
+        }
+      }
+
+      if (!finalReport) throw new Error("Analysis ended without a report.");
+      setReport(finalReport);
       setStatus("done");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setStatus("error");
-    } finally {
-      clearInterval(timer);
     }
   }
 
@@ -66,7 +70,7 @@ export default function AnalyzePanel() {
           {status === "loading" ? "Researching…" : "Analyze my deck →"}
         </button>
         {status === "loading" && (
-          <span className="animate-pulse text-sm text-muted">{LOADING_STEPS[step]}</span>
+          <span className="animate-pulse truncate text-sm text-muted">{progress}</span>
         )}
       </div>
 

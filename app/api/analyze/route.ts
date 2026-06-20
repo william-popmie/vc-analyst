@@ -1,44 +1,93 @@
-import { NextResponse } from "next/server";
 import { extractDeckText } from "@/lib/pdf/extract";
 import { loadPlaybook } from "@/lib/playbook/load";
 import { getDiligenceEngine } from "@/lib/diligence/engine";
 import { EmptyDeckError } from "@/lib/diligence/types";
+import type { ProgressEvent } from "@/lib/diligence/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // web research can take a while
 
+/**
+ * Streams the analysis as NDJSON: one JSON `ProgressEvent` per line. The client
+ * reads the stream and renders live progress; the final line is either a
+ * `{ type: "report" }` or `{ type: "error" }` event. Keeping bytes flowing also
+ * prevents proxies from killing the long-lived connection mid-research.
+ */
 export async function POST(req: Request) {
-  try {
-    const form = await req.formData();
-    const file = form.get("file");
+  const encoder = new TextEncoder();
 
-    if (!(file instanceof File)) {
-      return NextResponse.json({ error: "No PDF uploaded." }, { status: 400 });
-    }
-    if (file.type !== "application/pdf") {
-      return NextResponse.json({ error: "File must be a PDF." }, { status: 400 });
-    }
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let closed = false;
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const deckText = await extractDeckText(buffer);
-    const playbook = loadPlaybook();
+      // Serialize one event to an NDJSON line, log it server-side, and enqueue.
+      // Guarded: if the client disconnected (controller closed), keep logging
+      // server-side but stop trying to enqueue instead of throwing.
+      const send = (event: ProgressEvent) => {
+        if (event.type === "report") {
+          console.log("[analyze] ▸ report ready");
+        } else if (event.type === "error") {
+          console.log("[analyze] ✖ error:", event.message);
+        } else if (event.type === "search") {
+          console.log("[analyze] 🔎 search:", event.query);
+        } else if (event.type === "source") {
+          console.log("[analyze] 📄 source:", event.title, "—", event.url);
+        } else {
+          console.log("[analyze] •", event.phase, "—", event.message);
+        }
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+        } catch {
+          closed = true; // client went away — stop enqueuing, let work finish
+        }
+      };
 
-    const report = await getDiligenceEngine().run({ deckText, playbook });
-    return NextResponse.json(report);
-  } catch (err) {
-    if (err instanceof EmptyDeckError) {
-      return NextResponse.json({ error: err.message }, { status: 422 });
-    }
-    if (err instanceof Error && err.message.includes("ANTHROPIC_API_KEY")) {
-      return NextResponse.json(
-        { error: "Server is missing its API key. Set ANTHROPIC_API_KEY." },
-        { status: 500 },
-      );
-    }
-    console.error("[analyze] failed:", err);
-    return NextResponse.json(
-      { error: "Analysis failed. Please try again." },
-      { status: 500 },
-    );
-  }
+      try {
+        const form = await req.formData();
+        const file = form.get("file");
+
+        if (!(file instanceof File)) {
+          send({ type: "error", message: "No PDF uploaded." });
+          return;
+        }
+        if (file.type !== "application/pdf") {
+          send({ type: "error", message: "File must be a PDF." });
+          return;
+        }
+
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const deckText = await extractDeckText(buffer);
+        const playbook = loadPlaybook();
+
+        const report = await getDiligenceEngine().run({ deckText, playbook }, send);
+        send({ type: "report", report });
+      } catch (err) {
+        if (err instanceof EmptyDeckError) {
+          send({ type: "error", message: err.message });
+        } else if (err instanceof Error && err.message.includes("ANTHROPIC_API_KEY")) {
+          send({ type: "error", message: "Server is missing its API key. Set ANTHROPIC_API_KEY." });
+        } else {
+          console.error("[analyze] failed:", err);
+          send({ type: "error", message: "Analysis failed. Please try again." });
+        }
+      } finally {
+        if (!closed) {
+          try {
+            controller.close();
+          } catch {
+            /* already closed by the client — nothing to do */
+          }
+        }
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    },
+  });
 }

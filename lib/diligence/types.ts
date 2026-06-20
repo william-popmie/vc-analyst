@@ -72,11 +72,40 @@ export interface DiligenceInput {
 }
 
 /**
+ * Progress events the engine emits while it works, so the UI can show live
+ * activity instead of a frozen spinner. These are streamed to the client as
+ * NDJSON; the frontend imports only these types to render the research log.
+ */
+export type ProgressEvent =
+  /** A coarse phase change in the pipeline. */
+  | { type: "status"; phase: DiligencePhase; message: string }
+  /** Claude fired a web search with this query. */
+  | { type: "search"; query: string }
+  /** A source Claude consulted while researching. */
+  | { type: "source"; title: string; url: string }
+  /** Terminal success event — carries the finished report. */
+  | { type: "report"; report: DueDiligenceReport }
+  /** Terminal failure event. */
+  | { type: "error"; message: string };
+
+export type DiligencePhase =
+  | "reading"
+  | "researching"
+  | "synthesizing"
+  | "done";
+
+/** Callback the engine calls to report progress as it runs. */
+export type ProgressCallback = (event: ProgressEvent) => void;
+
+/**
  * The swappable research engine. The Claude implementation can be replaced with
  * a custom research engine later without touching the API route or the UI.
+ *
+ * `onEvent` is optional: callers that just want the final report can ignore it,
+ * while the streaming API route passes one to forward progress to the client.
  */
 export interface DiligenceEngine {
-  run(input: DiligenceInput): Promise<DueDiligenceReport>;
+  run(input: DiligenceInput, onEvent?: ProgressCallback): Promise<DueDiligenceReport>;
 }
 
 /** Thrown when a deck has too little extractable text (e.g. image-only PDF). */
