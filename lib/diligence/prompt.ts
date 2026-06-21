@@ -15,7 +15,7 @@ Apply these insider criteria within every relevant section. This is real interna
 ${playbook}
 
 ## Research — required
-Before writing the report you MUST use the web_search tool to investigate the company. Run at least 3 searches, covering: (1) the founders by name (LinkedIn, GitHub, prior companies, exits — and note if they cannot be found, which itself is a signal), (2) the real competitive landscape, and (3) the market size / "why now" claims. Findings can confirm OR contradict the deck — report both. Record EVERY URL you actually consulted in the "sources" array; never return an empty sources array if you performed searches.
+Before writing the report you MUST search the web to investigate the company. Run at least 3 searches, covering: (1) the founders by name (LinkedIn, GitHub, prior companies, exits — and note if they cannot be found, which itself is a signal), (2) the real competitive landscape, and (3) the market size / "why now" claims. Findings can confirm OR contradict the deck — report both. Record EVERY URL you actually consulted in the "sources" array; never return an empty sources array if you performed searches.
 
 ## Scoring
 - Score each section and the company overall from 1 to 10 (10 = exceptional, fundable today; 1 = not investable).

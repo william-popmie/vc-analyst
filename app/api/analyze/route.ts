@@ -65,8 +65,10 @@ export async function POST(req: Request) {
       } catch (err) {
         if (err instanceof EmptyDeckError) {
           send({ type: "error", message: err.message });
-        } else if (err instanceof Error && err.message.includes("ANTHROPIC_API_KEY")) {
-          send({ type: "error", message: "Server is missing its API key. Set ANTHROPIC_API_KEY." });
+        } else if (err instanceof Error && /API_?KEY is not set/i.test(err.message)) {
+          // Surface the engine's own message ("GEMINI_API_KEY is not set…" /
+          // "ANTHROPIC_API_KEY is not set…") so the fix is obvious server-side.
+          send({ type: "error", message: err.message });
         } else {
           console.error("[analyze] failed:", err);
           send({ type: "error", message: "Analysis failed. Please try again." });
