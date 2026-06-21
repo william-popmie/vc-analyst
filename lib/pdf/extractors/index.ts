@@ -1,6 +1,6 @@
 import type { DeckTextExtractor } from "./types";
 import { embeddedTextExtractor } from "./embedded-text";
-import { visionOcrExtractor } from "./vision-ocr";
+import { geminiVisionOcrExtractor } from "./gemini-vision-ocr";
 
 export type { DeckTextExtractor } from "./types";
 
@@ -13,5 +13,5 @@ export type { DeckTextExtractor } from "./types";
  */
 export const DECK_TEXT_EXTRACTORS: DeckTextExtractor[] = [
   embeddedTextExtractor, // fast path: native text layer
-  visionOcrExtractor, // fallback: Claude vision OCR for image-only / scanned decks
+  geminiVisionOcrExtractor, // fallback: Gemini vision OCR for image-only / scanned decks
 ];

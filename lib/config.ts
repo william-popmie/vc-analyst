@@ -13,6 +13,10 @@ export const MODEL_ID = "claude-sonnet-4-6";
 // a fast model keeps this preprocessing step cheap and quick.
 export const OCR_MODEL_ID = "claude-sonnet-4-6";
 
+// Gemini model used to OCR image-only PDFs. 2.5 Flash reads PDFs natively (it
+// transcribes scanned/image slides) and is fast + cost-effective.
+export const GEMINI_OCR_MODEL_ID = "gemini-2.5-flash";
+
 export function getAnthropicApiKey(): string {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
@@ -23,8 +27,9 @@ export function getAnthropicApiKey(): string {
   return key;
 }
 
-// Gemini model used by the Google engine. 2.5 Flash is fast + cost-effective and
-// supports Google Search grounding (the equivalent of Claude's web_search).
+// Gemini model used by the Google diligence engine. 2.5 Flash is fast +
+// cost-effective and supports Google Search grounding (the equivalent of
+// Claude's web_search).
 export const GEMINI_MODEL_ID = "gemini-2.5-flash";
 
 export function getGeminiApiKey(): string {
