@@ -27,11 +27,6 @@ export function getAnthropicApiKey(): string {
   return key;
 }
 
-// Gemini model used by the Google diligence engine. 2.5 Flash is fast +
-// cost-effective and supports Google Search grounding (the equivalent of
-// Claude's web_search).
-export const GEMINI_MODEL_ID = "gemini-2.5-flash";
-
 export function getGeminiApiKey(): string {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
