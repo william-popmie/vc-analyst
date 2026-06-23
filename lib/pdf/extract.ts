@@ -1,5 +1,5 @@
 import { EmptyDeckError } from "@/lib/diligence/types";
-import { DECK_TEXT_EXTRACTORS } from "@/lib/pdf/extractors";
+import { getDeckTextExtractors } from "@/lib/pdf/extractors";
 
 /** Minimum characters for a deck to count as "readable" rather than empty. */
 const MIN_DECK_CHARS = 80;
@@ -19,7 +19,7 @@ const MIN_DECK_CHARS = 80;
 export async function extractDeckText(buffer: Buffer): Promise<string> {
   let lastError: unknown;
 
-  for (const extractor of DECK_TEXT_EXTRACTORS) {
+  for (const extractor of getDeckTextExtractors()) {
     try {
       const text = await extractor.extract(buffer);
       if (text.length >= MIN_DECK_CHARS) {

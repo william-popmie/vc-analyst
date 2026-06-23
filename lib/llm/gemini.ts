@@ -1,0 +1,83 @@
+import { GoogleGenAI } from "@google/genai";
+import { GEMINI_MODEL_ID, GEMINI_OCR_MODEL_ID, getGeminiApiKey } from "@/lib/config";
+import type {
+  GenerateArgs,
+  LlmProvider,
+  ResearchArgs,
+  ResearchOutput,
+  WebSource,
+} from "./types";
+
+// All Gemini-specific knobs live here and nowhere else.
+const OCR_MAX_TOKENS = 16000;
+
+function ai(): GoogleGenAI {
+  return new GoogleGenAI({ apiKey: getGeminiApiKey() });
+}
+
+/** Google Gemini adapter — translates the generic capabilities to the SDK. */
+export const geminiProvider: LlmProvider = {
+  name: "gemini",
+
+  async transcribePdf(pdf, instruction) {
+    const response = await ai().models.generateContent({
+      model: GEMINI_OCR_MODEL_ID,
+      contents: [
+        { inlineData: { mimeType: "application/pdf", data: pdf.toString("base64") } },
+        { text: instruction },
+      ],
+      // Thinking off — the whole budget goes to the transcription.
+      config: { maxOutputTokens: OCR_MAX_TOKENS, thinkingConfig: { thinkingBudget: 0 } },
+    });
+    return (response.text ?? "").trim();
+  },
+
+  async researchWeb({ system, user, onSearch, onSource }): Promise<ResearchOutput> {
+    const stream = await ai().models.generateContentStream({
+      model: GEMINI_MODEL_ID,
+      contents: user,
+      // Google Search grounding — the equivalent of Claude's web_search.
+      config: { systemInstruction: system, tools: [{ googleSearch: {} }] },
+    });
+
+    const sources: WebSource[] = [];
+    const seenQueries = new Set<string>();
+    const seenSources = new Set<string>();
+    let findings = "";
+
+    for await (const chunk of stream) {
+      if (chunk.text) findings += chunk.text;
+
+      // Grounding metadata arrives near the end of the stream (a burst), not
+      // live per-query like Claude. Source URLs are Google redirect links.
+      const grounding = chunk.candidates?.[0]?.groundingMetadata;
+      if (!grounding) continue;
+
+      for (const query of grounding.webSearchQueries ?? []) {
+        if (!query || seenQueries.has(query)) continue;
+        seenQueries.add(query);
+        onSearch?.(query);
+      }
+      for (const groundingChunk of grounding.groundingChunks ?? []) {
+        const web = groundingChunk.web;
+        if (!web?.uri || seenSources.has(web.uri)) continue;
+        seenSources.add(web.uri);
+        const source: WebSource = { title: web.title ?? web.uri, url: web.uri };
+        sources.push(source);
+        onSource?.(source);
+      }
+    }
+
+    return { findings: findings.trim(), sources };
+  },
+
+  async generateJson({ system, user }) {
+    // No tools + JSON mime type → guaranteed single valid JSON object.
+    const response = await ai().models.generateContent({
+      model: GEMINI_MODEL_ID,
+      contents: user,
+      config: { systemInstruction: system, responseMimeType: "application/json" },
+    });
+    return (response.text ?? "").trim();
+  },
+};

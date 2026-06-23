@@ -3,10 +3,15 @@
  * so the Vercel build stays green even when the var isn't present at build.
  */
 
-// The single model id used by the diligence engine. Swap here to change models.
+// The Claude model id used by the Claude diligence engine.
 // Sonnet 4.6 is fast + cost-effective for this public-facing research task and
 // supports the native web_search tool with dynamic filtering.
 export const MODEL_ID = "claude-sonnet-4-6";
+
+// Gemini model used by the Gemini diligence engine. 2.5 Flash is fast +
+// cost-effective and supports Google Search grounding (the equivalent of
+// Claude's web_search).
+export const GEMINI_MODEL_ID = "gemini-2.5-flash";
 
 // Model used only to OCR/transcribe image-only PDFs into text before they enter
 // the pipeline. Transcription is a simpler task than the diligence research, so

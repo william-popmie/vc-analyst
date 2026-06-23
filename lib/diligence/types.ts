@@ -71,6 +71,14 @@ export interface DiligenceInput {
   playbook: string;
 }
 
+/** What the research stage hands to the writer stage. */
+export interface ResearchResult {
+  /** Prose research notes. */
+  findings: string;
+  /** Sources consulted (authoritative URL list). */
+  sources: Source[];
+}
+
 /**
  * Progress events the engine emits while it works, so the UI can show live
  * activity instead of a frozen spinner. These are streamed to the client as
