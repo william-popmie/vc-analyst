@@ -35,12 +35,14 @@ export interface ResearchOutput {
 export interface GenerateArgs {
   system: string;
   user: string;
+  /** Called with each incremental chunk of the generated text. */
+  onText?: (delta: string) => void;
 }
 
 /**
  * One adapter per LLM vendor. Each method is a generic capability; the
  * implementation translates it into that vendor's SDK calls (model choice,
- * tool/grounding shape, streaming, JSON mode, etc.).
+ * tool/grounding shape, streaming, etc.).
  */
 export interface LlmProvider {
   readonly name: Provider;
@@ -51,6 +53,9 @@ export interface LlmProvider {
   /** Research the web; stream queries/sources; return findings + sources. */
   researchWeb(args: ResearchArgs): Promise<ResearchOutput>;
 
-  /** Generate a single JSON object (ungrounded) and return the raw text. */
-  generateJson(args: GenerateArgs): Promise<string>;
+  /**
+   * Generate text (ungrounded, no tools), streaming chunks via `onText`, and
+   * return the full text. Used to stream the NDJSON form-field fill.
+   */
+  generateStream(args: GenerateArgs): Promise<string>;
 }

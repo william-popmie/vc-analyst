@@ -1,38 +1,75 @@
+import { emptyForm } from "@/lib/diligence/form-schema";
+import { fillFields } from "@/lib/diligence/fill-fields";
 import { research } from "@/lib/diligence/research";
-import { writeReport } from "@/lib/diligence/writer";
+import { getWriterProvider } from "@/lib/diligence/provider-config";
+import {
+  buildCompleteSystemPrompt,
+  buildCompleteUserPrompt,
+  buildDeckExtractSystemPrompt,
+  buildDeckExtractUserPrompt,
+} from "@/lib/diligence/prompt";
+import { predictInvest } from "@/lib/invest/model";
 import type {
   DiligenceEngine,
   DiligenceInput,
-  DueDiligenceReport,
+  DueDiligenceForm,
   ProgressCallback,
 } from "@/lib/diligence/types";
 
 /**
- * The diligence pipeline: research (web) → write (structured report). Both
- * stages are generic — they dispatch to whichever provider is configured via
- * the LlmProvider boundary. The API route and UI only see this DiligenceEngine.
+ * The diligence pipeline, all stages streaming into one live-filling form:
+ *   1. extract  — fill what the deck says (fast, deck-sourced)
+ *   2. research — web search to verify/augment (search/source/note events)
+ *   3. complete — fill the gaps + the scorecard (web-sourced)
+ *   4. verdict  — the custom invest model (stubbed for now)
+ *
+ * Each field arrives as a live `field` event; the API route and UI only depend
+ * on `DueDiligenceForm` + `ProgressEvent`.
  */
 class PipelineDiligenceEngine implements DiligenceEngine {
   async run(
     input: DiligenceInput,
     onEvent?: ProgressCallback,
-  ): Promise<DueDiligenceReport> {
+  ): Promise<DueDiligenceForm> {
     const emit: ProgressCallback = onEvent ?? (() => {});
+    const form = emptyForm();
+    // Extraction + completion are ungrounded generation — use the writer provider.
+    const provider = getWriterProvider();
 
-    // Stage 1 — research (emits its own reading/researching/search/source events).
+    // 1. Extract everything derivable from the deck.
+    emit({ type: "status", phase: "extracting", message: "Reading the deck" });
+    await fillFields({
+      provider,
+      system: buildDeckExtractSystemPrompt(input.playbook),
+      user: buildDeckExtractUserPrompt(input.deckText),
+      form,
+      emit,
+    });
+
+    // 2. Research the web (emits search/source/note).
+    emit({ type: "status", phase: "researching", message: "Researching online" });
     const researchResult = await research(input, onEvent);
+    form.sources = researchResult.sources;
 
-    // Stage 2 — write the structured report from the deck + findings.
-    emit({ type: "status", phase: "synthesizing", message: "Writing the due diligence report" });
-    const report = await writeReport({ ...input, research: researchResult });
+    // 3. Complete the form + scorecard with the findings.
+    emit({ type: "status", phase: "completing", message: "Completing the form" });
+    await fillFields({
+      provider,
+      system: buildCompleteSystemPrompt(input.playbook),
+      user: buildCompleteUserPrompt(input.deckText, researchResult),
+      form,
+      emit,
+    });
 
-    // The research stage's sources are the authoritative consulted-URL list.
-    const sources = researchResult.sources.length
-      ? researchResult.sources
-      : report.sources;
+    // 4. Investment verdict from the custom model (stub for now).
+    emit({ type: "status", phase: "verdict", message: "Running the investment model" });
+    const verdict = await predictInvest(form.scorecard);
+    form.verdict = verdict;
+    emit({ type: "verdict", verdict });
 
+    form.generatedAt = new Date().toISOString();
     emit({ type: "status", phase: "done", message: "Report ready" });
-    return { ...report, sources };
+    return form;
   }
 }
 

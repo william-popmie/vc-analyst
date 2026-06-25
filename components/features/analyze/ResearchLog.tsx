@@ -162,7 +162,7 @@ function NotesPanel({ notes, active }: { notes: string; active: boolean }) {
  */
 export default function ResearchLog({ state, active }: { state: AnalysisState; active: boolean }) {
   const elapsed = useElapsed(state.startedAt, active);
-  const done = !active && !!state.report;
+  const done = !active;
   const [expanded, setExpanded] = useState(false);
 
   const fullTrail = (

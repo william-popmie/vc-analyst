@@ -117,14 +117,15 @@ export const claudeProvider: LlmProvider = {
     return { findings: textOf(response.content), sources };
   },
 
-  async generateJson({ system, user }) {
-    // No tools — Claude reliably emits one JSON object from the prompt alone.
-    const response = await client().messages.create({
+  async generateStream({ system, user, onText }) {
+    // No tools — stream plain text (the pipeline parses NDJSON field lines).
+    const stream = client().messages.stream({
       model: MODEL_ID,
       max_tokens: WRITE_MAX_TOKENS,
       system,
       messages: [{ role: "user", content: user }],
     });
-    return textOf(response.content);
+    if (onText) stream.on("text", (delta: string) => onText(delta));
+    return textOf((await stream.finalMessage()).content);
   },
 };

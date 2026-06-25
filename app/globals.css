@@ -73,6 +73,17 @@ html, body {
 }
 .animate-blink { animation: blink 1s steps(1) infinite; color: var(--accent); }
 
+/* Highlight flash when a form cell fills in live */
+@keyframes cell-pop {
+  0% { background-color: var(--marker); }
+  100% { background-color: transparent; }
+}
+.cell-pop {
+  animation: cell-pop 1s ease-out both;
+  border-radius: 3px;
+  box-decoration-break: clone;
+}
+
 /* SVG dashed-border march for the dropzone (set on the <rect>) */
 @keyframes dash-march {
   to { stroke-dashoffset: -28; }

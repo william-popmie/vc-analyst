@@ -1,70 +1,97 @@
-import { SECTION_KEYS } from "@/lib/diligence/types";
-import type { DueDiligenceReport } from "@/lib/diligence/types";
+import type { DueDiligenceForm, FieldSource, Founder } from "./types";
 
 /**
- * Shared report-shaping helpers used by every engine. The model is instructed to
- * emit a single JSON object; these turn that (possibly messy) text into a
- * well-formed `DueDiligenceReport` the frontend can render safely.
+ * Parsing + assembly for the NDJSON field stream the model emits. Each line is
+ * one field: {"key": "...", "value": ..., "source": "..."}. `parseFieldLine`
+ * turns a line into a typed field; `applyField` writes it onto the form.
  */
 
-/** Extract the JSON object from the model's final text, tolerating stray prose. */
-export function parseReport(text: string): Record<string, unknown> {
-  const cleaned = text.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
-  const start = cleaned.indexOf("{");
-  const end = cleaned.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error("Model did not return a JSON report.");
-  }
-  return JSON.parse(cleaned.slice(start, end + 1));
+export interface ParsedField {
+  key: string;
+  value: unknown;
+  source: FieldSource;
 }
 
-/** Defensive shaping so the frontend always gets a well-formed report. */
-export function normalize(raw: Record<string, unknown>): DueDiligenceReport {
-  const company = (raw.company ?? {}) as Record<string, unknown>;
-  const overall = (raw.overall ?? {}) as Record<string, unknown>;
-  const sections = Array.isArray(raw.sections) ? (raw.sections as Record<string, unknown>[]) : [];
-  const sources = Array.isArray(raw.sources) ? (raw.sources as Record<string, unknown>[]) : [];
+const VALID_SOURCES = new Set<FieldSource>(["deck", "web", "inferred", "unknown"]);
 
-  const arr = (v: unknown): string[] =>
-    Array.isArray(v) ? v.map((x) => String(x)).filter(Boolean) : [];
-  const num = (v: unknown): number => {
-    const n = Number(v);
-    return Number.isFinite(n) ? Math.min(10, Math.max(1, n)) : 0;
-  };
-  const str = (v: unknown): string | null => (typeof v === "string" && v ? v : null);
+/** Parse one NDJSON line into a field, tolerating fences/whitespace. */
+export function parseFieldLine(line: string): ParsedField | null {
+  const trimmed = line.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return null;
+  try {
+    const obj = JSON.parse(trimmed) as { key?: unknown; value?: unknown; source?: unknown };
+    if (typeof obj.key !== "string") return null;
+    const source = (typeof obj.source === "string" && VALID_SOURCES.has(obj.source as FieldSource)
+      ? obj.source
+      : "inferred") as FieldSource;
+    return { key: obj.key, value: obj.value, source };
+  } catch {
+    return null;
+  }
+}
 
-  return {
-    company: {
-      name: str(company.name) ?? "Unknown company",
-      oneLiner: str(company.oneLiner) ?? "",
-      sector: str(company.sector),
-      stage: str(company.stage),
-      location: str(company.location),
-      website: str(company.website),
-    },
-    overall: {
-      score: num(overall.score),
-      recommendation: str(overall.recommendation) ?? "No recommendation",
-      thesis: str(overall.thesis) ?? "",
-      topStrengths: arr(overall.topStrengths),
-      topConcerns: arr(overall.topConcerns),
-    },
-    sections: sections
-      .map((s) => ({
-        key: String(s.key) as DueDiligenceReport["sections"][number]["key"],
-        title: str(s.title) ?? String(s.key),
-        score: num(s.score),
-        summary: str(s.summary) ?? "",
-        fromDeck: arr(s.fromDeck),
-        fromResearch: arr(s.fromResearch),
-        greenFlags: arr(s.greenFlags),
-        redFlags: arr(s.redFlags),
-        questionsAVCWouldAsk: arr(s.questionsAVCWouldAsk),
-      }))
-      .filter((s) => (SECTION_KEYS as readonly string[]).includes(s.key)),
-    sources: sources
-      .map((s) => ({ title: str(s.title) ?? str(s.url) ?? "", url: str(s.url) ?? "" }))
-      .filter((s) => s.url),
-    generatedAt: new Date().toISOString(),
-  };
+function str(v: unknown): string {
+  return typeof v === "string" ? v : v == null ? "" : String(v);
+}
+
+function clampRating(v: unknown): number {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? Math.min(5, Math.max(0, n)) : 0;
+}
+
+function normalizeFounders(value: unknown): Founder[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((f) => {
+      const o = (f ?? {}) as Record<string, unknown>;
+      return {
+        role: str(o.role),
+        name: str(o.name),
+        commitment: str(o.commitment),
+        background: Array.isArray(o.background) ? o.background.map(str).filter(Boolean) : [],
+      };
+    })
+    .filter((f) => f.name || f.role);
+}
+
+/**
+ * Apply a parsed field onto the form (mutates). Returns true if the key was
+ * recognized and written — unknown keys are ignored defensively.
+ */
+export function applyField(
+  form: DueDiligenceForm,
+  key: string,
+  value: unknown,
+  source: FieldSource,
+): boolean {
+  if (key === "founders") {
+    form.founders.members = normalizeFounders(value);
+    return true;
+  }
+
+  if (key.startsWith("scorecard.")) {
+    const metric = key.slice("scorecard.".length);
+    if (metric === "funding") {
+      const n = Math.round(Number(value));
+      form.scorecard.funding = Number.isFinite(n) ? Math.max(0, n) : 0;
+      return true;
+    }
+    if (metric in form.scorecard) {
+      (form.scorecard as unknown as Record<string, number>)[metric] = clampRating(value);
+      return true;
+    }
+    return false;
+  }
+
+  // Dotted "section.field" → a Field { value, source }.
+  const [section, field] = key.split(".");
+  const node = (form as unknown as Record<string, Record<string, unknown>>)[section];
+  if (node && field && field in node) {
+    const target = node[field];
+    if (target && typeof target === "object" && "value" in target) {
+      node[field] = { value: str(value), source };
+      return true;
+    }
+  }
+  return false;
 }

@@ -11,29 +11,21 @@ import type {
 } from "@/lib/diligence/types";
 
 /**
- * Stage 1 (generic) — research the company via the configured provider's web
- * search, forwarding the provider's query/source callbacks as ProgressEvents.
- * Provider-agnostic: it only talks to the LlmProvider boundary.
+ * Web-research stage (generic) — researches the company via the configured
+ * provider's web search and forwards the provider's query/source/text callbacks
+ * as ProgressEvents. The engine owns the phase status; this only emits the
+ * search/source/note activity.
  */
 export async function research(
   { deckText, playbook }: DiligenceInput,
   onEvent?: ProgressCallback,
 ): Promise<ResearchResult> {
   const emit: ProgressCallback = onEvent ?? (() => {});
-  emit({ type: "status", phase: "reading", message: "Reading the deck" });
-
-  let researching = false;
 
   return getProvider(getResearchProvider()).researchWeb({
     system: buildResearchSystemPrompt(playbook),
     user: buildResearchUserPrompt(deckText),
-    onSearch: (query) => {
-      if (!researching) {
-        researching = true;
-        emit({ type: "status", phase: "researching", message: "Researching online" });
-      }
-      emit({ type: "search", query });
-    },
+    onSearch: (query) => emit({ type: "search", query }),
     onSource: (source) => emit({ type: "source", ...source }),
     onText: (text) => emit({ type: "note", text }),
   });

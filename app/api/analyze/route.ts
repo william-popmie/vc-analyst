@@ -32,6 +32,11 @@ export async function POST(req: Request) {
           console.log("[analyze] 🔎 search:", event.query);
         } else if (event.type === "source") {
           console.log("[analyze] 📄 source:", event.title, "—", event.url);
+        } else if (event.type === "field") {
+          console.log("[analyze] ✓ field:", event.key);
+        } else if (event.type === "verdict") {
+          const v = event.verdict;
+          console.log("[analyze] ⚖ verdict:", v.available ? (v.invest ? "INVEST" : "PASS") : "(stub)");
         } else if (event.type === "note") {
           // High-frequency note deltas — don't log each one server-side.
         } else {

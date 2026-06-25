@@ -1,6 +1,9 @@
+import { emptyForm } from "@/lib/diligence/form-schema";
+import { applyField } from "@/lib/diligence/parse";
 import type {
   DiligencePhase,
-  DueDiligenceReport,
+  DueDiligenceForm,
+  InvestVerdict,
   ProgressEvent,
   Source,
 } from "@/lib/diligence/types";
@@ -20,41 +23,46 @@ export interface Step {
 }
 
 export interface AnalysisState {
-  /** "uploading" before the first server event; then the backend phase. */
   phase: DiligencePhase | "uploading";
   steps: Step[];
+  /** The form, mutated live as `field` events arrive. */
+  form: DueDiligenceForm;
+  /** Keys filled so far (drives cell highlight / count). */
+  filledCount: number;
+  /** Most recently filled key (for a brief highlight). */
+  lastKey: string | null;
   searches: SearchGroup[];
   sourceCount: number;
   notes: string;
+  verdict: InvestVerdict | null;
   startedAt: number | null;
-  report: DueDiligenceReport | null;
   error: string | null;
 }
 
 const STEP_ORDER: { phase: DiligencePhase; label: string }[] = [
-  { phase: "reading", label: "Reading deck" },
+  { phase: "extracting", label: "Reading deck" },
   { phase: "researching", label: "Researching" },
-  { phase: "synthesizing", label: "Writing report" },
+  { phase: "completing", label: "Completing form" },
+  { phase: "verdict", label: "Verdict" },
   { phase: "done", label: "Done" },
 ];
 
 export function initialState(): AnalysisState {
   return {
     phase: "uploading",
-    steps: STEP_ORDER.map((s, i) => ({
-      ...s,
-      status: i === 0 ? "active" : "pending",
-    })),
+    steps: STEP_ORDER.map((s, i) => ({ ...s, status: i === 0 ? "active" : "pending" })),
+    form: emptyForm(),
+    filledCount: 0,
+    lastKey: null,
     searches: [],
     sourceCount: 0,
     notes: "",
+    verdict: null,
     startedAt: Date.now(),
-    report: null,
     error: null,
   };
 }
 
-/** Mark every step before `phase` done, `phase` active, the rest pending. */
 function advanceSteps(steps: Step[], phase: DiligencePhase): Step[] {
   const target = STEP_ORDER.findIndex((s) => s.phase === phase);
   return steps.map((step, i) => {
@@ -69,25 +77,26 @@ export type StreamAction = { type: "reset" } | { type: "event"; event: ProgressE
 
 export function streamReducer(state: AnalysisState, action: StreamAction): AnalysisState {
   if (action.type === "reset") return initialState();
-
   const event = action.event;
+
   switch (event.type) {
     case "status":
-      return {
-        ...state,
-        phase: event.phase,
-        steps: advanceSteps(state.steps, event.phase),
-      };
+      return { ...state, phase: event.phase, steps: advanceSteps(state.steps, event.phase) };
+
+    case "field": {
+      // Mutate a cloned form so React sees a new reference.
+      const form = structuredClone(state.form);
+      applyField(form, event.key, event.value, event.source);
+      return { ...state, form, filledCount: state.filledCount + 1, lastKey: event.key };
+    }
+
     case "search":
-      return {
-        ...state,
-        searches: [...state.searches, { query: event.query, sources: [] }],
-      };
+      return { ...state, searches: [...state.searches, { query: event.query, sources: [] }] };
+
     case "source": {
       const source: Source = { title: event.title, url: event.url };
       const searches = [...state.searches];
       if (searches.length === 0) {
-        // A source arrived before any query — bucket it under a generic group.
         searches.push({ query: "Background research", sources: [source] });
       } else {
         const last = searches[searches.length - 1];
@@ -95,23 +104,26 @@ export function streamReducer(state: AnalysisState, action: StreamAction): Analy
       }
       return { ...state, searches, sourceCount: state.sourceCount + 1 };
     }
+
     case "note":
       return { ...state, notes: state.notes + event.text };
+
+    case "verdict":
+      return { ...state, verdict: event.verdict };
+
     case "report":
       return {
         ...state,
-        report: event.report,
+        form: event.report,
+        verdict: event.report.verdict ?? state.verdict,
         phase: "done",
         steps: advanceSteps(state.steps, "done"),
       };
+
     case "error":
       return { ...state, error: event.message };
+
     default:
       return state;
   }
-}
-
-/** Total sources across all search groups (deduped already on the backend). */
-export function totalSources(state: AnalysisState): number {
-  return state.sourceCount;
 }

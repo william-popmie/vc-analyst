@@ -1,92 +1,88 @@
-import { SECTION_KEYS } from "./types";
+import { FIELD_DESCRIPTORS } from "./form-schema";
 import type { ResearchResult } from "./types";
 
-const PERSONA = `You are a venture capital analyst at a top global accelerator (think Plug and Play / Y Combinator tier). You evaluate pitch decks the way a real investment team does: skeptical, evidence-driven, and willing to do live research before forming a view.`;
+const PERSONA = `You are a venture capital analyst at a top global accelerator (think Plug and Play / Y Combinator tier). You evaluate startups the way a real investment team does: skeptical, evidence-driven, and precise.`;
 
 function playbookBlock(playbook: string): string {
   return `## Your evaluation framework (the playbook)
-Apply these insider criteria within every relevant section. This is real internal knowledge, not generic startup advice:
+Apply these insider criteria. This is real internal knowledge, not generic startup advice:
 
 ${playbook}`;
 }
 
-/** The exact JSON shape the writer must emit. Shared by every writer. */
-const REPORT_SCHEMA_TEXT = `{
-  "company": {
-    "name": string,
-    "oneLiner": string,
-    "sector": string | null,
-    "stage": string | null,
-    "location": string | null,
-    "website": string | null
-  },
-  "overall": {
-    "score": number,                // 1-10
-    "recommendation": string,       // plain-language VC verdict
-    "thesis": string,               // 2-3 sentences, "how a VC sees this"
-    "topStrengths": string[],
-    "topConcerns": string[]
-  },
-  "sections": [                      // one object per dimension below
-    {
-      "key": string,                // one of: ${SECTION_KEYS.join(", ")}
-      "title": string,              // human-readable, e.g. "Team"
-      "score": number,              // 1-10
-      "summary": string,
-      "fromDeck": string[],         // what the deck claimed
-      "fromResearch": string[],     // what web research surfaced
-      "greenFlags": string[],
-      "redFlags": string[],
-      "questionsAVCWouldAsk": string[]
-    }
-  ],
-  "sources": [ { "title": string, "url": string } ],
-  "generatedAt": string             // ISO timestamp
-}`;
+/** Render the field registry as a guide the model fills in. */
+function fieldGuide(): string {
+  return FIELD_DESCRIPTORS.map((f) => {
+    let type = "text (string)";
+    if (f.kind === "founders") type = "array of objects {role, name, commitment, background (array of strings)}";
+    else if (f.kind === "rating") type = "integer 1-5";
+    else if (f.kind === "number") type = "integer";
+    return `- ${f.key} — ${type} — ${f.hint}`;
+  }).join("\n");
+}
 
-// ──────────────────────────── Stage 1: research ────────────────────────────
+/** The NDJSON contract shared by the deck-extract and completion passes. */
+const NDJSON_RULES = `## Output format — STRICT
+Output ONLY a sequence of JSON objects, ONE PER LINE (NDJSON). No prose, no markdown fences, no surrounding array — just one JSON object per line. Each line must be:
+{"key": "<field key>", "value": <value>, "source": "<deck|web|inferred|unknown>"}
+Rules:
+- Emit the fields in the order listed below.
+- For text fields "value" is a string; for "founders" it is the JSON array; for scorecard.* it is an integer.
+- "source": "deck" if it came from the pitch deck, "web" if from research, "inferred" if you reasoned it, "unknown" if you genuinely don't have it.
+- Do NOT fabricate. If a field can't be filled, skip it (don't emit a line).
+- Keep text values concise and specific (1–4 sentences). Output nothing except the JSON lines.
+
+## Fields
+${fieldGuide()}`;
+
+// ───────────────────────── Pass 1: extract from the deck ─────────────────────────
+
+export function buildDeckExtractSystemPrompt(playbook: string): string {
+  return `${PERSONA}
+
+You will be given the extracted text of a startup's pitch deck. Fill in every field of the due-diligence form that you can find IN THE DECK. Use source "deck" for everything here. Skip fields the deck doesn't cover (especially "company.source" and "company.personalNote", which come from the investor's own meeting and are almost never in a deck). Do NOT score the scorecard yet — skip all scorecard.* fields in this pass.
+
+${playbookBlock(playbook)}
+
+${NDJSON_RULES}`;
+}
+
+export function buildDeckExtractUserPrompt(deckText: string): string {
+  return `Pitch deck text:\n\n---\n${deckText}\n---\n\nEmit the deck-derived fields as NDJSON now.`;
+}
+
+// ───────────────────────── Pass 2: web research ─────────────────────────
 
 export function buildResearchSystemPrompt(playbook: string): string {
   return `${PERSONA}
 
-You will be given the extracted text of a startup's pitch deck. Your job in THIS step is to RESEARCH the company — you are not writing the final report yet.
+You will be given a startup's pitch deck text. Research the company on the web to support a due-diligence form: verify the founders (LinkedIn/GitHub/prior companies/exits — note if they can't be found, which is itself a signal), map the real competitive landscape, validate the market size and "why now", and find any traction, funding, or cap-table signals. Findings can confirm OR contradict the deck — capture both.
 
 ${playbookBlock(playbook)}
 
-## Research — required
-Search the web to investigate the company. Run at least 3 searches, covering: (1) the founders by name (LinkedIn, GitHub, prior companies, exits — and note if they cannot be found, which itself is a signal), (2) the real competitive landscape, and (3) the market size / "why now" claims. Findings can confirm OR contradict the deck — capture both.
-
 ## Output
-Write thorough, well-organized research notes in plain prose (NOT JSON). Group them by theme (founders, market, competition, traction, product, business model, deck quality). Be specific and separate what you found online from what the deck claimed. These notes will be handed to a separate step that writes the structured report.`;
+Write thorough, well-organized research notes in plain prose (NOT JSON), grouped by theme (founders, problem, solution, market, competition, traction, funding). These notes feed the step that completes the form.`;
 }
 
 export function buildResearchUserPrompt(deckText: string): string {
-  return `Here is the extracted pitch deck text. Research the company, then output your research notes.\n\n---\n${deckText}\n---`;
+  return `Pitch deck text:\n\n---\n${deckText}\n---\n\nResearch the company, then output your notes.`;
 }
 
-// ──────────────────────────── Stage 2: writing ────────────────────────────
+// ───────────────────────── Pass 3: complete the form ─────────────────────────
 
-export function buildWriterSystemPrompt(playbook: string): string {
+export function buildCompleteSystemPrompt(playbook: string): string {
   return `${PERSONA}
 
-You will be given (a) a startup's pitch deck text and (b) research notes already gathered about the company. Your job is to produce a DUE DILIGENCE REPORT showing the founder exactly how the VC side would assess their company. Do not perform new research — work from the deck and the provided notes.
+You are given (a) a startup's pitch deck and (b) research notes already gathered. Produce the COMPLETE due-diligence form: fill every field you can, preferring the most accurate value (use the deck for claims, the research to verify/augment/correct). Also fill the scorecard this time.
+
+Scorecard guidance: rate each metric 1–5 (1 = weak, 5 = exceptional) based on everything gathered — Team, Technology, Market Size, Value Proposition, Competitive Advantage, Social Impact. Set scorecard.funding to the round amount sought as a plain integer. These feed an investment model.
 
 ${playbookBlock(playbook)}
 
-## Scoring
-- Score each section and the company overall from 1 to 10 (10 = exceptional, fundable today; 1 = not investable).
-- Be honest and specific. Cite what the deck said vs. what the research found.
-- For "recommendation", give a clear fundability verdict in plain language (how a VC would describe their level of interest and what would need to be true to invest).
-
-## Output format — CRITICAL
-Respond with EXACTLY ONE valid JSON object and NOTHING else (no markdown fences, no prose before or after). It must match this TypeScript type:
-
-${REPORT_SCHEMA_TEXT}
-
-Include one section object for EACH of these keys, in this order: ${SECTION_KEYS.join(", ")}. Keep arrays concise (2-5 items each). For "sources", reuse the sources listed in the input. Output the JSON object only.`;
+${NDJSON_RULES}`;
 }
 
-export function buildWriterUserPrompt(deckText: string, research: ResearchResult): string {
+export function buildCompleteUserPrompt(deckText: string, research: ResearchResult): string {
   const sourceList =
     research.sources.map((s) => `- ${s.title}: ${s.url}`).join("\n") || "(none)";
   return `## Pitch deck text
@@ -98,5 +94,5 @@ ${research.findings || "(no external findings were gathered)"}
 ## Sources consulted
 ${sourceList}
 
-Now produce the due diligence report as a single JSON object.`;
+Now emit the complete form (including the scorecard) as NDJSON.`;
 }

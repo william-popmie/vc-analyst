@@ -2,18 +2,17 @@
 
 import { useReducer, useState } from "react";
 import Dropzone from "@/components/ui/Dropzone";
-import ReportView from "@/components/features/report/ReportView";
 import ResearchLog from "@/components/features/analyze/ResearchLog";
+import DueDiligenceFormView from "@/components/features/form/DueDiligenceFormView";
+import VerdictPopup from "@/components/features/form/VerdictPopup";
 import { initialState, streamReducer } from "@/components/features/analyze/streamState";
 import { readProgressStream } from "@/lib/diligence/stream";
-import type { DueDiligenceReport } from "@/lib/diligence/types";
 
 type Status = "idle" | "loading" | "done" | "error";
 
 export default function AnalyzePanel() {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<Status>("idle");
-  const [report, setReport] = useState<DueDiligenceReport | null>(null);
   const [error, setError] = useState<string>("");
   const [stream, dispatch] = useReducer(streamReducer, undefined, initialState);
 
@@ -21,7 +20,6 @@ export default function AnalyzePanel() {
     if (!file) return;
     setStatus("loading");
     setError("");
-    setReport(null);
     dispatch({ type: "reset" });
 
     try {
@@ -30,17 +28,14 @@ export default function AnalyzePanel() {
       const res = await fetch("/api/analyze", { method: "POST", body });
       if (!res.body) throw new Error("No response stream.");
 
-      let finalReport: DueDiligenceReport | null = null;
-
-      // Consume the NDJSON progress stream, feeding every event to the log.
+      let sawReport = false;
       for await (const event of readProgressStream(res.body)) {
         dispatch({ type: "event", event });
-        if (event.type === "report") finalReport = event.report;
+        if (event.type === "report") sawReport = true;
         else if (event.type === "error") throw new Error(event.message);
       }
 
-      if (!finalReport) throw new Error("Analysis ended without a report.");
-      setReport(finalReport);
+      if (!sawReport) throw new Error("Analysis ended without a result.");
       setStatus("done");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
@@ -48,7 +43,8 @@ export default function AnalyzePanel() {
     }
   }
 
-  const showLog = status === "loading" || (status === "done" && !!report);
+  const started = status === "loading" || status === "done";
+  const loading = status === "loading";
 
   return (
     <section className="space-y-4">
@@ -57,18 +53,18 @@ export default function AnalyzePanel() {
         <span className="h-px flex-1 bg-ink/10" />
       </div>
 
-      <Dropzone file={file} onFile={(f) => { setFile(f); setStatus("idle"); }} disabled={status === "loading"} />
+      <Dropzone file={file} onFile={(f) => { setFile(f); setStatus("idle"); }} disabled={loading} />
 
       <div className="flex items-center gap-4">
         <button
           onClick={analyze}
-          disabled={!file || status === "loading"}
+          disabled={!file || loading}
           className="rounded-full bg-ink px-8 py-3.5 font-semibold text-paper transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:bg-ink"
         >
-          {status === "loading" ? "Researching…" : "Analyze my deck →"}
+          {loading ? "Filling the form…" : "Run due diligence →"}
         </button>
-        {status === "loading" && (
-          <span className="text-sm text-muted">Live — this runs for a minute or two.</span>
+        {loading && (
+          <span className="text-sm text-muted">Live — watch the form fill in below.</span>
         )}
       </div>
 
@@ -78,11 +74,11 @@ export default function AnalyzePanel() {
         </p>
       )}
 
-      {showLog && <ResearchLog state={stream} active={status === "loading"} />}
-
-      {status === "done" && report && (
-        <div className="pt-2">
-          <ReportView report={report} />
+      {started && (
+        <div className="space-y-4 pt-2">
+          {stream.verdict && <VerdictPopup verdict={stream.verdict} />}
+          <DueDiligenceFormView form={stream.form} active={loading} />
+          <ResearchLog state={stream} active={loading} />
         </div>
       )}
     </section>

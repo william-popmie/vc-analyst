@@ -74,13 +74,22 @@ export const geminiProvider: LlmProvider = {
     return { findings: findings.trim(), sources };
   },
 
-  async generateJson({ system, user }) {
-    // No tools + JSON mime type → guaranteed single valid JSON object.
-    const response = await ai().models.generateContent({
+  async generateStream({ system, user, onText }) {
+    // No tools — stream plain text (the pipeline parses NDJSON field lines). We
+    // deliberately don't set responseMimeType json: the output is many JSON
+    // lines, not one object.
+    const stream = await ai().models.generateContentStream({
       model: GEMINI_MODEL_ID,
       contents: user,
-      config: { systemInstruction: system, responseMimeType: "application/json" },
+      config: { systemInstruction: system },
     });
-    return (response.text ?? "").trim();
+    let text = "";
+    for await (const chunk of stream) {
+      if (chunk.text) {
+        text += chunk.text;
+        onText?.(chunk.text);
+      }
+    }
+    return text.trim();
   },
 };
