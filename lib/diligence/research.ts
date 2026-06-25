@@ -35,5 +35,6 @@ export async function research(
       emit({ type: "search", query });
     },
     onSource: (source) => emit({ type: "source", ...source }),
+    onText: (text) => emit({ type: "note", text }),
   });
 }

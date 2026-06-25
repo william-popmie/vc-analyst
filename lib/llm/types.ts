@@ -21,6 +21,8 @@ export interface ResearchArgs {
   onSearch?: (query: string) => void;
   /** Called with each source as it's consulted. */
   onSource?: (source: WebSource) => void;
+  /** Called with each incremental chunk of the model's research notes text. */
+  onText?: (delta: string) => void;
 }
 
 export interface ResearchOutput {

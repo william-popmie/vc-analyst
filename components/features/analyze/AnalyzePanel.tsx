@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useReducer, useState } from "react";
 import Dropzone from "@/components/ui/Dropzone";
 import ReportView from "@/components/features/report/ReportView";
+import ResearchLog from "@/components/features/analyze/ResearchLog";
+import { initialState, streamReducer } from "@/components/features/analyze/streamState";
 import { readProgressStream } from "@/lib/diligence/stream";
 import type { DueDiligenceReport } from "@/lib/diligence/types";
 
@@ -13,14 +15,14 @@ export default function AnalyzePanel() {
   const [status, setStatus] = useState<Status>("idle");
   const [report, setReport] = useState<DueDiligenceReport | null>(null);
   const [error, setError] = useState<string>("");
-  const [progress, setProgress] = useState<string>("");
+  const [stream, dispatch] = useReducer(streamReducer, undefined, initialState);
 
   async function analyze() {
     if (!file) return;
     setStatus("loading");
     setError("");
     setReport(null);
-    setProgress("Uploading your deck…");
+    dispatch({ type: "reset" });
 
     try {
       const body = new FormData();
@@ -30,17 +32,11 @@ export default function AnalyzePanel() {
 
       let finalReport: DueDiligenceReport | null = null;
 
-      // Consume the NDJSON progress stream until a terminal event arrives.
+      // Consume the NDJSON progress stream, feeding every event to the log.
       for await (const event of readProgressStream(res.body)) {
-        if (event.type === "status") {
-          setProgress(event.message + "…");
-        } else if (event.type === "search") {
-          setProgress(`Searching: ${event.query}`);
-        } else if (event.type === "report") {
-          finalReport = event.report;
-        } else if (event.type === "error") {
-          throw new Error(event.message);
-        }
+        dispatch({ type: "event", event });
+        if (event.type === "report") finalReport = event.report;
+        else if (event.type === "error") throw new Error(event.message);
       }
 
       if (!finalReport) throw new Error("Analysis ended without a report.");
@@ -51,6 +47,8 @@ export default function AnalyzePanel() {
       setStatus("error");
     }
   }
+
+  const showLog = status === "loading" || (status === "done" && !!report);
 
   return (
     <section className="space-y-4">
@@ -70,7 +68,7 @@ export default function AnalyzePanel() {
           {status === "loading" ? "Researching…" : "Analyze my deck →"}
         </button>
         {status === "loading" && (
-          <span className="animate-pulse truncate text-sm text-muted">{progress}</span>
+          <span className="text-sm text-muted">Live — this runs for a minute or two.</span>
         )}
       </div>
 
@@ -80,8 +78,10 @@ export default function AnalyzePanel() {
         </p>
       )}
 
+      {showLog && <ResearchLog state={stream} active={status === "loading"} />}
+
       {status === "done" && report && (
-        <div className="pt-4">
+        <div className="pt-2">
           <ReportView report={report} />
         </div>
       )}

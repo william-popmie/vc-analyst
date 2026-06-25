@@ -87,10 +87,12 @@ export interface ResearchResult {
 export type ProgressEvent =
   /** A coarse phase change in the pipeline. */
   | { type: "status"; phase: DiligencePhase; message: string }
-  /** Claude fired a web search with this query. */
+  /** A web search the model ran with this query. */
   | { type: "search"; query: string }
-  /** A source Claude consulted while researching. */
+  /** A source the model consulted while researching. */
   | { type: "source"; title: string; url: string }
+  /** An incremental chunk of the model's live research notes (observational). */
+  | { type: "note"; text: string }
   /** Terminal success event — carries the finished report. */
   | { type: "report"; report: DueDiligenceReport }
   /** Terminal failure event. */

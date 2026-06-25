@@ -32,6 +32,8 @@ export async function POST(req: Request) {
           console.log("[analyze] 🔎 search:", event.query);
         } else if (event.type === "source") {
           console.log("[analyze] 📄 source:", event.title, "—", event.url);
+        } else if (event.type === "note") {
+          // High-frequency note deltas — don't log each one server-side.
         } else {
           console.log("[analyze] •", event.phase, "—", event.message);
         }

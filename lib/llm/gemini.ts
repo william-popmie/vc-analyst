@@ -32,7 +32,7 @@ export const geminiProvider: LlmProvider = {
     return (response.text ?? "").trim();
   },
 
-  async researchWeb({ system, user, onSearch, onSource }): Promise<ResearchOutput> {
+  async researchWeb({ system, user, onSearch, onSource, onText }): Promise<ResearchOutput> {
     const stream = await ai().models.generateContentStream({
       model: GEMINI_MODEL_ID,
       contents: user,
@@ -46,7 +46,10 @@ export const geminiProvider: LlmProvider = {
     let findings = "";
 
     for await (const chunk of stream) {
-      if (chunk.text) findings += chunk.text;
+      if (chunk.text) {
+        findings += chunk.text;
+        onText?.(chunk.text); // surface findings prose live (observational only)
+      }
 
       // Grounding metadata arrives near the end of the stream (a burst), not
       // live per-query like Claude. Source URLs are Google redirect links.

@@ -63,7 +63,7 @@ export const claudeProvider: LlmProvider = {
     return textOf((await stream.finalMessage()).content);
   },
 
-  async researchWeb({ system, user, onSearch, onSource }): Promise<ResearchOutput> {
+  async researchWeb({ system, user, onSearch, onSource, onText }): Promise<ResearchOutput> {
     const c = client();
     const messages: Anthropic.MessageParam[] = [{ role: "user", content: user }];
     const params = {
@@ -80,7 +80,9 @@ export const claudeProvider: LlmProvider = {
     // server_tool_use blocks carry the query; web_search_tool_result blocks
     // carry the consulted pages (with clean, direct URLs).
     type Stream = ReturnType<typeof c.messages.stream>;
-    const attach = (stream: Stream) =>
+    const attach = (stream: Stream) => {
+      // Surface the model's findings prose live (observational only).
+      if (onText) stream.on("text", (delta: string) => onText(delta));
       stream.on("contentBlock", (block: Anthropic.ContentBlock) => {
         if (block.type === "server_tool_use" && block.name === "web_search") {
           const query = (block.input as { query?: string } | null)?.query;
@@ -96,6 +98,7 @@ export const claudeProvider: LlmProvider = {
           }
         }
       });
+    };
 
     let stream = c.messages.stream({ ...params, messages });
     attach(stream);

@@ -60,6 +60,19 @@ html, body {
 }
 .fade-up { animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
+/* Shorter fade-up for live log entries streaming in */
+@keyframes fade-in-soft {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Blinking cursor for the live notes panel */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.animate-blink { animation: blink 1s steps(1) infinite; color: var(--accent); }
+
 /* SVG dashed-border march for the dropzone (set on the <rect>) */
 @keyframes dash-march {
   to { stroke-dashoffset: -28; }
