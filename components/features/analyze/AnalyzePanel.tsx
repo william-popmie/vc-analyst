@@ -20,6 +20,16 @@ export default function AnalyzePanel() {
   const [stream, dispatch] = useReducer(streamReducer, undefined, initialState);
   const abortRef = useRef<AbortController | null>(null);
 
+  // Lock the page behind the takeover so it can't scroll into view.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   // Back button closes the analysis takeover.
   useEffect(() => {
     const onPop = () => {
@@ -99,7 +109,7 @@ export default function AnalyzePanel() {
 
       {/* Full-screen analysis takeover */}
       {open && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-paper">
+        <div className="fixed inset-x-0 top-0 z-50 h-dvh overflow-y-auto bg-paper">
           <div className="sticky top-0 z-10 border-b border-ink/10 bg-paper/85 backdrop-blur">
             <div className="mx-auto flex max-w-3xl items-center gap-4 px-5 py-3">
               <button
