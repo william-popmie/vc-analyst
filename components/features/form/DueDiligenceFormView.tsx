@@ -19,7 +19,7 @@ function readNumber(form: DueDiligenceForm, key: string): number {
 const SOURCE_BADGE: Record<FieldSource, { label: string; cls: string } | null> = {
   deck: { label: "deck", cls: "bg-accent/15 text-accent" },
   web: { label: "web", cls: "bg-blue-500/15 text-blue-700" },
-  inferred: { label: "inferred", cls: "bg-amber-500/20 text-amber-700" },
+  inferred: { label: "inference", cls: "bg-amber-500/20 text-amber-700" },
   unknown: null,
 };
 
@@ -165,6 +165,28 @@ export default function DueDiligenceFormView({
           </div>
         </section>
       ))}
+
+      {form.sources.length > 0 && (
+        <section>
+          <div className="bg-ink px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-paper">
+            Sources
+          </div>
+          <ul className="divide-y divide-ink/5 px-4 py-2">
+            {form.sources.map((s, i) => (
+              <li key={i} className="py-1.5">
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-accent hover:underline"
+                >
+                  {s.title || s.url} ↗
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

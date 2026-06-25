@@ -3,70 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AnalysisState, SearchGroup } from "./streamState";
 import { domainOf, faviconOf } from "./sourceDisplay";
-
-function formatElapsed(ms: number): string {
-  const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}s`;
-  return `${Math.floor(s / 60)}m ${s % 60}s`;
-}
-
-/** Live-ticking elapsed time; freezes when `active` goes false. */
-function useElapsed(startedAt: number | null, active: boolean): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!active) return;
-    const id = setInterval(() => setNow(Date.now()), 250);
-    return () => clearInterval(id);
-  }, [active]);
-  return startedAt ? Math.max(0, now - startedAt) : 0;
-}
-
-function StepDot({ status }: { status: "pending" | "active" | "done" }) {
-  if (status === "done") {
-    return (
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-paper">
-        <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3.5">
-          <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </span>
-    );
-  }
-  if (status === "active") {
-    return (
-      <span className="relative flex h-5 w-5 items-center justify-center">
-        <span className="absolute inline-flex h-5 w-5 animate-ping rounded-full bg-accent/40" />
-        <span className="relative inline-flex h-3 w-3 rounded-full bg-accent" />
-      </span>
-    );
-  }
-  return <span className="h-5 w-5 rounded-full border-2 border-ink/20" />;
-}
-
-function Stepper({ state, elapsed }: { state: AnalysisState; elapsed: number }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-      {state.steps.map((step, i) => (
-        <div key={step.phase} className="flex items-center gap-2">
-          <StepDot status={step.status} />
-          <span
-            className={
-              "text-sm " +
-              (step.status === "pending"
-                ? "text-ink/35"
-                : step.status === "active"
-                  ? "font-semibold text-ink"
-                  : "text-ink/70")
-            }
-          >
-            {step.label}
-          </span>
-          {i < state.steps.length - 1 && <span className="text-ink/20">›</span>}
-        </div>
-      ))}
-      <span className="ml-auto font-mono text-xs tabular-nums text-muted">{formatElapsed(elapsed)}</span>
-    </div>
-  );
-}
+import { formatElapsed, useElapsed } from "./elapsed";
 
 function SourceRow({ title, url }: { title: string; url: string }) {
   const favicon = faviconOf(url);
@@ -167,7 +104,6 @@ export default function ResearchLog({ state, active }: { state: AnalysisState; a
 
   const fullTrail = (
     <div className="space-y-4">
-      {!done && <Stepper state={state} elapsed={elapsed} />}
       <div className="flex items-center gap-3 text-xs text-muted">
         <span><span className="font-semibold text-ink">{state.searches.length}</span> searches</span>
         <span className="text-ink/20">•</span>

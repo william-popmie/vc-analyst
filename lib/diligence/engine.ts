@@ -1,4 +1,4 @@
-import { emptyForm } from "@/lib/diligence/form-schema";
+import { computeGaps, emptyForm } from "@/lib/diligence/form-schema";
 import { fillFields } from "@/lib/diligence/fill-fields";
 import { research } from "@/lib/diligence/research";
 import { getWriterProvider } from "@/lib/diligence/provider-config";
@@ -46,9 +46,12 @@ class PipelineDiligenceEngine implements DiligenceEngine {
       emit,
     });
 
-    // 2. Research the web (emits search/source/note).
+    // 2. Research the web, targeting the fields the deck left empty.
     emit({ type: "status", phase: "researching", message: "Researching online" });
-    const researchResult = await research(input, onEvent);
+    const researchResult = await research(input, onEvent, {
+      companyName: form.company.name.value,
+      gaps: computeGaps(form),
+    });
     form.sources = researchResult.sources;
 
     // 3. Complete the form + scorecard with the findings.

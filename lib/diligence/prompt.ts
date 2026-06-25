@@ -56,16 +56,35 @@ export function buildDeckExtractUserPrompt(deckText: string): string {
 export function buildResearchSystemPrompt(playbook: string): string {
   return `${PERSONA}
 
-You will be given a startup's pitch deck text. Research the company on the web to support a due-diligence form: verify the founders (LinkedIn/GitHub/prior companies/exits — note if they can't be found, which is itself a signal), map the real competitive landscape, validate the market size and "why now", and find any traction, funding, or cap-table signals. Findings can confirm OR contradict the deck — capture both.
+You will be given a startup's pitch deck plus a list of FACTS STILL MISSING after reading the deck. Research the company on the web to support a due-diligence form.
+
+Your #1 job is to find the missing facts in that list — most are one or two web searches away (a founding year, an HQ city, the founders' names and prior roles). Run a separate, specific search for each missing fact; don't give up after one generic query. Also verify the founders (LinkedIn/prior companies/exits — note if they genuinely can't be found, which is itself a signal), map the real competitive landscape, validate the market size and "why now", and find traction/funding signals. Findings can confirm OR contradict the deck — capture both.
 
 ${playbookBlock(playbook)}
 
 ## Output
-Write thorough, well-organized research notes in plain prose (NOT JSON), grouped by theme (founders, problem, solution, market, competition, traction, funding). These notes feed the step that completes the form.`;
+Write thorough research notes in plain prose (NOT JSON), grouped by theme (founders, founded/location, problem, solution, market, competition, traction, funding). For EACH missing fact you were asked to find, state it explicitly and plainly (e.g. "Founded: 2008", "Based in: San Francisco, CA", "Co-founder: Brian Chesky — RISD, ex-...") so the next step can't miss it. If after searching you truly can't find one, say so explicitly.`;
 }
 
-export function buildResearchUserPrompt(deckText: string): string {
-  return `Pitch deck text:\n\n---\n${deckText}\n---\n\nResearch the company, then output your notes.`;
+export function buildResearchUserPrompt(
+  deckText: string,
+  companyName: string,
+  gaps: string[],
+): string {
+  const company = companyName || "(unknown — identify it from the deck)";
+  const gapBlock = gaps.length
+    ? `## Facts still MISSING after the deck (find these first)\n${gaps.map((g) => `- ${g}`).join("\n")}`
+    : `## The deck covered the basics — verify and enrich them.`;
+  return `Company: ${company}
+
+${gapBlock}
+
+## Pitch deck text
+---
+${deckText}
+---
+
+Research the company on the web — prioritizing the missing facts above — then output your notes.`;
 }
 
 // ───────────────────────── Pass 3: complete the form ─────────────────────────
@@ -74,6 +93,8 @@ export function buildCompleteSystemPrompt(playbook: string): string {
   return `${PERSONA}
 
 You are given (a) a startup's pitch deck and (b) research notes already gathered. Produce the COMPLETE due-diligence form: fill every field you can, preferring the most accurate value (use the deck for claims, the research to verify/augment/correct). Also fill the scorecard this time.
+
+CRITICAL: any field the deck didn't cover MUST be filled from the research notes whenever the notes contain it — especially company.founded, company.basedIn, and founders (names, roles, backgrounds). For those web-derived values use source "web". Only leave a field unfilled if neither the deck nor the research has it.
 
 Scorecard guidance: rate each metric 1–5 (1 = weak, 5 = exceptional) based on everything gathered — Team, Technology, Market Size, Value Proposition, Competitive Advantage, Social Impact. Set scorecard.funding to the round amount sought as a plain integer. These feed an investment model.
 

@@ -104,6 +104,27 @@ export const SCORECARD_METRIC_KEYS = [
   "socialImpact",
 ] as const;
 
+/**
+ * Labels of the fields still empty after the deck pass — the research stage
+ * targets these specifically. Skips manual-only fields and the scorecard
+ * (scored later), and special-cases the founders list.
+ */
+export function computeGaps(form: DueDiligenceForm): string[] {
+  const gaps: string[] = [];
+  for (const f of FIELD_DESCRIPTORS) {
+    if (f.manualOnly || f.kind === "rating" || f.kind === "number") continue;
+    if (f.kind === "founders") {
+      if (form.founders.members.length === 0) gaps.push("Founders — names, roles, and backgrounds");
+      continue;
+    }
+    const [section, field] = f.key.split(".");
+    const node = (form as unknown as Record<string, Record<string, unknown>>)[section];
+    const target = node?.[field] as { value?: string } | undefined;
+    if (!target?.value) gaps.push(f.label);
+  }
+  return gaps;
+}
+
 const emptyField = () => ({ value: "", source: "unknown" as const });
 
 /** A blank form with every field unfilled. */
