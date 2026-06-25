@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { DueDiligenceForm } from "@/lib/diligence/types";
 
 /**
