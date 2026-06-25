@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { InvestVerdict } from "@/lib/diligence/types";
 
 /**
- * The investment verdict, shown as a banner once the pipeline finishes. While
- * the trained model isn't wired (`available: false`) it shows a clear placeholder
+ * The investment verdict, shown as a banner once the pipeline finishes. The
+ * call comes from William's custom model (trained on 800+ reviewed decks). If
+ * the model couldn't run (`available: false`) it shows a clear placeholder
  * rather than a fake invest/pass.
  */
 export default function VerdictPopup({ verdict }: { verdict: InvestVerdict }) {
@@ -14,6 +16,8 @@ export default function VerdictPopup({ verdict }: { verdict: InvestVerdict }) {
 
   const pending = !verdict.available;
   const invest = verdict.invest;
+  const pct =
+    verdict.probability !== undefined ? Math.round(verdict.probability * 100) : null;
 
   const tone = pending
     ? "border-ink/15 bg-paper-2/70 text-ink"
@@ -48,8 +52,25 @@ export default function VerdictPopup({ verdict }: { verdict: InvestVerdict }) {
         </p>
         <p className="text-lg font-bold">
           {pending ? "Verdict pending" : invest ? "Invest" : "Pass"}
+          {pct !== null && (
+            <span className="ml-2 align-middle font-mono text-sm font-medium text-muted">
+              {pct}% confidence
+            </span>
+          )}
         </p>
-        {verdict.note && <p className="mt-0.5 text-sm text-muted">{verdict.note}</p>}
+        {pending && verdict.note ? (
+          <p className="mt-0.5 text-sm text-muted">{verdict.note}</p>
+        ) : (
+          <p className="mt-0.5 text-xs text-muted">
+            Trained on 800+ pitch decks ·{" "}
+            <Link
+              href="/playbook"
+              className="font-medium text-ink underline decoration-marker decoration-2 underline-offset-2 transition-colors hover:decoration-accent"
+            >
+              the playbook
+            </Link>
+          </p>
+        )}
       </div>
 
       <button

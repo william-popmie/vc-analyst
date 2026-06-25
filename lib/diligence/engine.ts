@@ -1,5 +1,6 @@
 import { computeGaps, emptyForm } from "@/lib/diligence/form-schema";
 import { fillFields } from "@/lib/diligence/fill-fields";
+import { scoreCard } from "@/lib/diligence/score";
 import { research } from "@/lib/diligence/research";
 import { getWriterProvider } from "@/lib/diligence/provider-config";
 import {
@@ -54,7 +55,7 @@ class PipelineDiligenceEngine implements DiligenceEngine {
     });
     form.sources = researchResult.sources;
 
-    // 3. Complete the form + scorecard with the findings.
+    // 3. Complete the form with the findings.
     emit({ type: "status", phase: "completing", message: "Completing the form" });
     await fillFields({
       provider,
@@ -64,7 +65,18 @@ class PipelineDiligenceEngine implements DiligenceEngine {
       emit,
     });
 
-    // 4. Investment verdict from the custom model (stub for now).
+    // 4. Score the scorecard in its own dedicated pass — the sole input to the
+    //    invest model, kept separate so it can't be truncated to empty.
+    await scoreCard({
+      provider,
+      deckText: input.deckText,
+      research: researchResult,
+      playbook: input.playbook,
+      form,
+      emit,
+    });
+
+    // 5. Investment verdict from the custom ONNX model.
     emit({ type: "status", phase: "verdict", message: "Running the investment model" });
     const verdict = await predictInvest(form.scorecard);
     form.verdict = verdict;
