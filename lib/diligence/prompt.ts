@@ -10,15 +10,19 @@ Apply these insider criteria. This is real internal knowledge, not generic start
 ${playbook}`;
 }
 
-/** Render the field registry as a guide the model fills in. */
+/**
+ * Render the field registry as a guide the model fills in. The scorecard
+ * (rating/number kinds) is scored in its own dedicated stage, so the NDJSON
+ * field passes skip it.
+ */
 function fieldGuide(): string {
-  return FIELD_DESCRIPTORS.map((f) => {
-    let type = "text (string)";
-    if (f.kind === "founders") type = "array of objects {role, name, commitment, background (array of strings)}";
-    else if (f.kind === "rating") type = "integer 1-5";
-    else if (f.kind === "number") type = "integer";
-    return `- ${f.key} — ${type} — ${f.hint}`;
-  }).join("\n");
+  return FIELD_DESCRIPTORS.filter((f) => f.kind !== "rating" && f.kind !== "number")
+    .map((f) => {
+      let type = "text (string)";
+      if (f.kind === "founders") type = "array of objects {role, name, commitment, background (array of strings)}";
+      return `- ${f.key} — ${type} — ${f.hint}`;
+    })
+    .join("\n");
 }
 
 /** The NDJSON contract shared by the deck-extract and completion passes. */
@@ -27,7 +31,7 @@ Output ONLY a sequence of JSON objects, ONE PER LINE (NDJSON). No prose, no mark
 {"key": "<field key>", "value": <value>, "source": "<deck|web|inferred|unknown>"}
 Rules:
 - Emit the fields in the order listed below.
-- For text fields "value" is a string; for "founders" it is the JSON array; for scorecard.* it is an integer.
+- For text fields "value" is a string; for "founders" it is the JSON array.
 - "source": "deck" if it came from the pitch deck, "web" if from research, "inferred" if you reasoned it, "unknown" if you genuinely don't have it.
 - Do NOT fabricate. If a field can't be filled, skip it (don't emit a line).
 - Keep text values concise and specific (1–4 sentences). Output nothing except the JSON lines.
@@ -92,11 +96,9 @@ Research the company on the web — prioritizing the missing facts above — the
 export function buildCompleteSystemPrompt(playbook: string): string {
   return `${PERSONA}
 
-You are given (a) a startup's pitch deck and (b) research notes already gathered. Produce the COMPLETE due-diligence form: fill every field you can, preferring the most accurate value (use the deck for claims, the research to verify/augment/correct). Also fill the scorecard this time.
+You are given (a) a startup's pitch deck and (b) research notes already gathered. Produce the COMPLETE due-diligence form: fill every field you can, preferring the most accurate value (use the deck for claims, the research to verify/augment/correct).
 
 CRITICAL: any field the deck didn't cover MUST be filled from the research notes whenever the notes contain it — especially company.founded, company.basedIn, and founders (names, roles, backgrounds). For those web-derived values use source "web". Only leave a field unfilled if neither the deck nor the research has it.
-
-Scorecard guidance: rate each metric 1–5 (1 = weak, 5 = exceptional) based on everything gathered — Team, Technology, Market Size, Value Proposition, Competitive Advantage, Social Impact. Set scorecard.funding to the round amount sought as a plain integer. These feed an investment model.
 
 ${playbookBlock(playbook)}
 
@@ -115,5 +117,45 @@ ${research.findings || "(no external findings were gathered)"}
 ## Sources consulted
 ${sourceList}
 
-Now emit the complete form (including the scorecard) as NDJSON.`;
+Now emit the complete form as NDJSON.`;
+}
+
+// ───────────────────────── Pass 4: score the scorecard ─────────────────────────
+
+/**
+ * The scorecard is the SOLE input to the trained invest model, so it gets its
+ * own dedicated stage: a single small JSON object, impossible to truncate, that
+ * always produces all seven values. Definitions match William's rubric exactly.
+ */
+export function buildScorecardSystemPrompt(playbook: string): string {
+  return `${PERSONA}
+
+Score this startup on William's seven-factor scorecard. This is a judgment call — you always have enough to give your best estimate, so NEVER leave a value out. Use the deck and the research notes together.
+
+Rate each of these 1–5 (1 = weak, 5 = exceptional):
+- team — strength, completeness and track record of the founding team.
+- technology — product/tech maturity. 1 = prototype / MVP / undeveloped, 5 = market-ready (shipping, productized).
+- marketSize — size and growth of the addressable market.
+- valueProposition — how compelling and differentiated the value to customers is.
+- competitiveAdvantage — moat / defensibility versus competitors.
+- socialImpact — positive social or environmental impact.
+
+And one number:
+- funding — the total amount of money the startup has ALREADY RAISED to date (sum of prior rounds / capital in), as a plain integer in the deck's currency (no symbols, no separators). This is NOT the amount they are currently asking for. If nothing has been raised yet, or it's genuinely unknown, use 0.
+
+${playbookBlock(playbook)}
+
+## Output format — STRICT
+Output ONLY one JSON object, nothing else (no prose, no markdown fences):
+{"team": <1-5>, "technology": <1-5>, "marketSize": <1-5>, "valueProposition": <1-5>, "competitiveAdvantage": <1-5>, "socialImpact": <1-5>, "funding": <integer>}`;
+}
+
+export function buildScorecardUserPrompt(deckText: string, research: ResearchResult): string {
+  return `## Pitch deck text
+${deckText}
+
+## Research notes
+${research.findings || "(no external findings were gathered)"}
+
+Now output the scorecard JSON object.`;
 }

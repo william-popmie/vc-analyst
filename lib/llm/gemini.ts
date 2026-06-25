@@ -10,6 +10,12 @@ import type {
 
 // All Gemini-specific knobs live here and nowhere else.
 const OCR_MAX_TOKENS = 16000;
+// The field-fill passes emit a long NDJSON document. Gemini 2.5 Flash has
+// "thinking" ON by default, which spends the output-token budget on hidden
+// reasoning and can truncate the stream before the trailing fields (the
+// scorecard) are written. Disable thinking and give the visible output a
+// generous cap so the whole document always lands.
+const GENERATE_MAX_TOKENS = 16000;
 
 function ai(): GoogleGenAI {
   return new GoogleGenAI({ apiKey: getGeminiApiKey() });
@@ -81,7 +87,11 @@ export const geminiProvider: LlmProvider = {
     const stream = await ai().models.generateContentStream({
       model: GEMINI_MODEL_ID,
       contents: user,
-      config: { systemInstruction: system },
+      config: {
+        systemInstruction: system,
+        maxOutputTokens: GENERATE_MAX_TOKENS,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     });
     let text = "";
     for await (const chunk of stream) {

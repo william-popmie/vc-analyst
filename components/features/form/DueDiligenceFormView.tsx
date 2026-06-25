@@ -145,9 +145,13 @@ export default function DueDiligenceFormView({
   form: DueDiligenceForm;
   active?: boolean;
 }) {
+  // The Scorecard (model inputs) and the Sources list are shown separately,
+  // "behind the scenes" — they're not part of the DD document a VC hands over.
+  const docSections = DD_SECTIONS.filter((s) => s.title !== "Scorecard");
+
   return (
     <div className="overflow-hidden rounded-3xl border border-ink/15 bg-white/60 shadow-sm backdrop-blur">
-      {DD_SECTIONS.map((section) => (
+      {docSections.map((section) => (
         <section key={section.title}>
           <div className="bg-ink px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-paper">
             {section.title}
@@ -165,28 +169,6 @@ export default function DueDiligenceFormView({
           </div>
         </section>
       ))}
-
-      {form.sources.length > 0 && (
-        <section>
-          <div className="bg-ink px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-paper">
-            Sources
-          </div>
-          <ul className="divide-y divide-ink/5 px-4 py-2">
-            {form.sources.map((s, i) => (
-              <li key={i} className="py-1.5">
-                <a
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-accent hover:underline"
-                >
-                  {s.title || s.url} ↗
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </div>
   );
 }

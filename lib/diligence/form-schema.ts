@@ -80,13 +80,13 @@ export const DD_SECTIONS: FormSection[] = [
   {
     title: "Scorecard",
     fields: [
-      { key: "scorecard.team", label: "Team", kind: "rating", hint: "Rate the team 1–5." },
-      { key: "scorecard.technology", label: "Technology", kind: "rating", hint: "Rate the technology 1–5." },
+      { key: "scorecard.team", label: "Team", kind: "rating", hint: "Rate the team 1–5 (strength, completeness, track record)." },
+      { key: "scorecard.technology", label: "Technology", kind: "rating", hint: "Rate product/tech maturity 1–5 (1 = prototype/MVP/undeveloped, 5 = market-ready)." },
       { key: "scorecard.marketSize", label: "Market Size", kind: "rating", hint: "Rate the market size 1–5." },
       { key: "scorecard.valueProposition", label: "Value Proposition", kind: "rating", hint: "Rate the value proposition 1–5." },
-      { key: "scorecard.competitiveAdvantage", label: "Competitive Advantage", kind: "rating", hint: "Rate the competitive advantage 1–5." },
+      { key: "scorecard.competitiveAdvantage", label: "Competitive Advantage", kind: "rating", hint: "Rate the competitive advantage / moat 1–5." },
       { key: "scorecard.socialImpact", label: "Social Impact", kind: "rating", hint: "Rate the social impact 1–5." },
-      { key: "scorecard.funding", label: "Funding amount", kind: "number", hint: "Total funding amount sought this round, as an integer in the deck's currency (no symbols)." },
+      { key: "scorecard.funding", label: "Funding raised", kind: "number", hint: "Total funding the startup has ALREADY raised to date (not the current ask), as an integer in the deck's currency (no symbols)." },
     ],
   },
 ];

@@ -5,6 +5,7 @@ import Dropzone from "@/components/ui/Dropzone";
 import ResearchLog from "@/components/features/analyze/ResearchLog";
 import PhaseStepper from "@/components/features/analyze/PhaseStepper";
 import DueDiligenceFormView from "@/components/features/form/DueDiligenceFormView";
+import ScorecardPanel from "@/components/features/form/ScorecardPanel";
 import VerdictPopup from "@/components/features/form/VerdictPopup";
 import { initialState, streamReducer } from "@/components/features/analyze/streamState";
 import { readProgressStream } from "@/lib/diligence/stream";
@@ -119,9 +120,14 @@ export default function AnalyzePanel() {
                 {error}
               </p>
             )}
+            {/* Verdict pins to the very top — it lands at the end of the run. */}
             {stream.verdict && <VerdictPopup verdict={stream.verdict} />}
-            <DueDiligenceFormView form={stream.form} active={loading} />
+            {/* The live "streaming thing": searches, sources, research notes. */}
             <ResearchLog state={stream} active={loading} />
+            {/* Behind-the-scenes model inputs: scorecard stars + sources. */}
+            <ScorecardPanel form={stream.form} active={loading} />
+            {/* The due-diligence document itself. */}
+            <DueDiligenceFormView form={stream.form} active={loading} />
           </div>
         </div>
       )}

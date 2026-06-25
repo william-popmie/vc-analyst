@@ -36,7 +36,7 @@ export interface Scorecard {
   valueProposition: number;
   competitiveAdvantage: number;
   socialImpact: number;
-  /** Funding amount sought, in the deck's currency (integer). */
+  /** Funding the startup has already raised to date (not the ask), integer. */
   funding: number;
 }
 
@@ -44,8 +44,10 @@ export interface Scorecard {
 export interface InvestVerdict {
   /** True = invest, false = pass. Meaningful only when `available`. */
   invest: boolean;
-  /** False while the trained model isn't wired up yet (shows a placeholder). */
+  /** False if the trained model couldn't run (shows a placeholder + note). */
   available: boolean;
+  /** Invest probability 0–1 from the model, when available. */
+  probability?: number;
   note?: string;
 }
 
