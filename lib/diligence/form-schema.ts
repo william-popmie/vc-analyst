@@ -159,6 +159,7 @@ export function emptyForm(): DueDiligenceForm {
       funding: 0,
     },
     verdict: null,
+    deckFeedback: [],
     sources: [],
     generatedAt: new Date().toISOString(),
   };

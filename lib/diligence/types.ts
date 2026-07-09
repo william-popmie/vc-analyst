@@ -51,6 +51,20 @@ export interface InvestVerdict {
   note?: string;
 }
 
+/** How serious a piece of deck feedback is. */
+export type DeckFeedbackSeverity = "critical" | "warning" | "strength";
+
+/** One qualitative critique of the pitch deck itself (not a form field). */
+export interface DeckFeedbackItem {
+  severity: DeckFeedbackSeverity;
+  /** e.g. "Team", "Competition", "Market", "Deck Basics". */
+  category: string;
+  /** Short label, e.g. "No competitors slide". */
+  title: string;
+  /** 1–2 sentences of explanation, tied to the playbook where relevant. */
+  detail: string;
+}
+
 /**
  * The due-diligence form — mirrors William's Plug-and-Play DD template. Every
  * scalar field carries its value and where it came from, so the UI can badge
@@ -96,6 +110,8 @@ export interface DueDiligenceForm {
   };
   scorecard: Scorecard;
   verdict: InvestVerdict | null;
+  /** Qualitative critique of the deck itself — gaps, weaknesses, strengths. */
+  deckFeedback: DeckFeedbackItem[];
   sources: Source[];
   generatedAt: string;
 }
@@ -123,6 +139,8 @@ export type ProgressEvent =
   | { type: "status"; phase: DiligencePhase; message: string }
   /** A single form field was filled in. `value` is JSON for list/number fields. */
   | { type: "field"; key: string; value: unknown; source: FieldSource }
+  /** A piece of deck feedback (gap/weakness/strength) was generated. */
+  | { type: "feedback"; item: DeckFeedbackItem }
   /** A web search the model ran with this query. */
   | { type: "search"; query: string }
   /** A source the model consulted while researching. */

@@ -1,6 +1,7 @@
 import { emptyForm } from "@/lib/diligence/form-schema";
 import { applyField } from "@/lib/diligence/parse";
 import type {
+  DeckFeedbackItem,
   DiligencePhase,
   DueDiligenceForm,
   InvestVerdict,
@@ -35,6 +36,7 @@ export interface AnalysisState {
   sourceCount: number;
   notes: string;
   verdict: InvestVerdict | null;
+  deckFeedback: DeckFeedbackItem[];
   startedAt: number | null;
   error: string | null;
 }
@@ -58,6 +60,7 @@ export function initialState(): AnalysisState {
     sourceCount: 0,
     notes: "",
     verdict: null,
+    deckFeedback: [],
     startedAt: Date.now(),
     error: null,
   };
@@ -111,11 +114,15 @@ export function streamReducer(state: AnalysisState, action: StreamAction): Analy
     case "verdict":
       return { ...state, verdict: event.verdict };
 
+    case "feedback":
+      return { ...state, deckFeedback: [...state.deckFeedback, event.item] };
+
     case "report":
       return {
         ...state,
         form: event.report,
         verdict: event.report.verdict ?? state.verdict,
+        deckFeedback: event.report.deckFeedback ?? state.deckFeedback,
         phase: "done",
         steps: advanceSteps(state.steps, "done"),
       };

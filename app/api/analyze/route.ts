@@ -39,6 +39,8 @@ export async function POST(req: Request) {
           console.log("[analyze] ⚖ verdict:", v.available ? (v.invest ? "INVEST" : "PASS") : "(stub)");
         } else if (event.type === "note") {
           // High-frequency note deltas — don't log each one server-side.
+        } else if (event.type === "feedback") {
+          console.log("[analyze] 📝 feedback:", event.item.severity, "—", event.item.title);
         } else {
           console.log("[analyze] •", event.phase, "—", event.message);
         }
