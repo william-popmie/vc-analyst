@@ -15,22 +15,20 @@ export default function Hero() {
       </div>
 
       <h1 className="fade-up mt-6 text-5xl font-bold leading-[0.95] tracking-[-0.03em] text-ink sm:text-6xl" style={{ animationDelay: "0.05s" }}>
-        800 pitch decks,
+        I reviewed 800+ pitch decks{" "}
+        <span className="font-serif font-normal italic">as a VC</span> and trained an AI on
+        the verdicts.
         <br />
-        <span className="font-serif font-normal italic">everything</span>{" "}
-        <span className="marker">I learned</span>,
-        <br />
-        distilled into an AI.
+        <span className="marker">Have yours reviewed the same way.</span>
       </h1>
 
       <p className="fade-up mt-6 max-w-xl text-lg leading-relaxed text-muted" style={{ animationDelay: "0.15s" }}>
-        During my year as a VC analyst, I reviewed hundreds of decks every week alongside partners.
-        Upload yours and the AI runs it through that same framework — reading the deck, researching
-        your team and market live, and returning the{" "}
+        This isn&apos;t your deck read back to you. It&apos;s the same thing I did every week as
+        a VC — {" "}
         <Link href="/playbook" className="font-medium text-ink underline decoration-marker decoration-2 underline-offset-4 transition-colors hover:decoration-accent">
-          due-diligence memo a VC would write
+          the memo written about you
         </Link>
-        .
+        , not by you.
       </p>
 
       <div className="fade-up mt-8 flex flex-wrap gap-3" style={{ animationDelay: "0.25s" }}>
