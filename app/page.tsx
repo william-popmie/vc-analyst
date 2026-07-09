@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Hero from "@/components/features/hero/Hero";
 import AnalyzePanel from "@/components/features/analyze/AnalyzePanel";
+import SampleMemoPreview from "@/components/features/landing/SampleMemoPreview";
 
 export default function Home() {
   return (
@@ -9,15 +10,30 @@ export default function Home() {
       <AnalyzePanel />
 
       <section className="fade-up">
+        <div className="mb-6 text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+            Not a summary. Due diligence.
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-lg leading-relaxed text-muted">
+            I&apos;m not summarizing your startup — you already know your startup. I&apos;m
+            showing you <span className="marker">the part you never get to see</span>: what a
+            VC quietly checks, what they don&apos;t buy, and the call they&apos;d make before
+            you&apos;re ever in the room.
+          </p>
+        </div>
+        <SampleMemoPreview />
+      </section>
+
+      <section className="fade-up">
         <Link
           href="/playbook"
           className="group block rounded-3xl border border-ink/15 bg-gradient-to-br from-white/70 to-paper/40 p-8 backdrop-blur transition-colors hover:border-ink/30"
         >
           <div className="flex items-start justify-between gap-6">
             <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Fully transparent</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">The rubric</div>
               <p className="mt-2 text-xl font-bold tracking-tight text-ink">
-                What does the AI actually look at?
+                The exact criteria you&apos;re being judged against
               </p>
               <p className="mt-2 max-w-md leading-relaxed text-muted">
                 Real insider criteria — team credibility, competition, deck quality — from a year
