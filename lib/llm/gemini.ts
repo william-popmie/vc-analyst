@@ -50,8 +50,10 @@ export const geminiProvider: LlmProvider = {
     const seenQueries = new Set<string>();
     const seenSources = new Set<string>();
     let findings = "";
+    let lastFinish: string | undefined;
 
     for await (const chunk of stream) {
+      if (chunk.candidates?.[0]?.finishReason) lastFinish = chunk.candidates[0].finishReason;
       if (chunk.text) {
         findings += chunk.text;
         onText?.(chunk.text); // surface findings prose live (observational only)
@@ -77,6 +79,7 @@ export const geminiProvider: LlmProvider = {
       }
     }
 
+    console.log(`[gemini.researchWeb] finish=${lastFinish} findingsLen=${findings.length} queries=${seenQueries.size} sources=${sources.length}`);
     return { findings: findings.trim(), sources };
   },
 
