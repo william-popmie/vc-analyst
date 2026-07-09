@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Card from "@/components/ui/Card";
 import type { AnalysisState, SearchGroup } from "./streamState";
 import { domainOf, faviconOf } from "./sourceDisplay";
-import { formatElapsed, useElapsed } from "./elapsed";
 
 function SourceRow({ title, url }: { title: string; url: string }) {
   const favicon = faviconOf(url);
@@ -54,6 +54,40 @@ function SearchBlock({ group }: { group: SearchGroup }) {
   );
 }
 
+/**
+ * The scrolling list of searches + their sources. Capped to a fixed height so
+ * it can't grow unbounded, and auto-follows to the bottom as new activity
+ * streams in — but only while the user is already near the bottom, so scrolling
+ * up to read an earlier source doesn't get yanked back down.
+ */
+function SearchList({ searches, sourceCount }: { searches: SearchGroup[]; sourceCount: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const stickToBottom = useRef(true);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
+  }, [searches, sourceCount]);
+
+  function onScroll() {
+    const el = ref.current;
+    if (!el) return;
+    stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+  }
+
+  return (
+    <div
+      ref={ref}
+      onScroll={onScroll}
+      className="max-h-80 space-y-3 overflow-y-auto pr-1"
+    >
+      {searches.map((g, i) => (
+        <SearchBlock key={`${g.query}-${i}`} group={g} />
+      ))}
+    </div>
+  );
+}
+
 function NotesPanel({ notes, active }: { notes: string; active: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(true);
@@ -65,7 +99,7 @@ function NotesPanel({ notes, active }: { notes: string; active: boolean }) {
   if (!notes && !active) return null;
 
   return (
-    <div className="rounded-2xl border border-ink/10 bg-paper-2/60">
+    <div className="rounded-2xl border border-ink/10 bg-white/40">
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center gap-2 px-4 py-2.5 text-left"
@@ -93,60 +127,24 @@ function NotesPanel({ notes, active }: { notes: string; active: boolean }) {
 }
 
 /**
- * The detailed live research log. While `active`, shows the full streaming view;
- * once the report is ready it collapses to a one-line "research trail" the user
- * can expand to audit every query, source, and note.
+ * The research rail card: the live research notes on top, then a height-capped,
+ * auto-following list of every search query and the sources it surfaced. This
+ * is the only place sources render — the scorecard used to duplicate them.
  */
-export default function ResearchLog({ state, active }: { state: AnalysisState; active: boolean }) {
-  const elapsed = useElapsed(state.startedAt, active);
-  const done = !active;
-  const [expanded, setExpanded] = useState(false);
-
-  const fullTrail = (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 text-xs text-muted">
-        <span><span className="font-semibold text-ink">{state.searches.length}</span> searches</span>
-        <span className="text-ink/20">•</span>
-        <span><span className="font-semibold text-ink">{state.sourceCount}</span> sources</span>
-      </div>
-      {state.searches.length > 0 && (
-        <div className="space-y-3">
-          {state.searches.map((g, i) => (
-            <SearchBlock key={`${g.query}-${i}`} group={g} />
-          ))}
-        </div>
-      )}
-      <NotesPanel notes={state.notes} active={active} />
-    </div>
-  );
-
-  // Collapsed "research trail" after completion.
-  if (done) {
-    return (
-      <div className="rounded-3xl border border-ink/12 bg-white/55 backdrop-blur">
-        <button
-          onClick={() => setExpanded((e) => !e)}
-          className="flex w-full items-center gap-3 px-5 py-3.5 text-left"
-        >
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-paper">
-            <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3.5">
-              <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
-          <span className="text-sm text-ink">
-            Researched <span className="font-semibold">{state.sourceCount}</span> sources across{" "}
-            <span className="font-semibold">{state.searches.length}</span> searches in {formatElapsed(elapsed)}
-          </span>
-          <span className={"ml-auto text-ink/40 transition-transform " + (expanded ? "rotate-90" : "")}>›</span>
-        </button>
-        {expanded && <div className="border-t border-ink/10 px-5 py-4">{fullTrail}</div>}
-      </div>
-    );
-  }
-
+export default function ResearchTrail({ state, active }: { state: AnalysisState; active: boolean }) {
   return (
-    <div className="fade-up rounded-3xl border border-ink/12 bg-white/55 p-5 backdrop-blur">
-      {fullTrail}
-    </div>
+    <Card eyebrow="Research">
+      <div className="space-y-4 px-5 pb-4">
+        <div className="flex items-center gap-3 text-xs text-muted">
+          <span><span className="font-semibold text-ink">{state.searches.length}</span> searches</span>
+          <span className="text-ink/20">•</span>
+          <span><span className="font-semibold text-ink">{state.sourceCount}</span> sources</span>
+        </div>
+        <NotesPanel notes={state.notes} active={active} />
+        {state.searches.length > 0 && (
+          <SearchList searches={state.searches} sourceCount={state.sourceCount} />
+        )}
+      </div>
+    </Card>
   );
 }

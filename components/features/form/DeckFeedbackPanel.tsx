@@ -1,5 +1,6 @@
 "use client";
 
+import Card from "@/components/ui/Card";
 import type { DeckFeedbackItem, DeckFeedbackSeverity } from "@/lib/diligence/types";
 
 /**
@@ -62,13 +63,7 @@ export default function DeckFeedbackPanel({
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div className="fade-up overflow-hidden rounded-3xl border border-ink/12 bg-paper-2/50 backdrop-blur">
-      <div className="flex items-center gap-2 px-5 py-3">
-        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">
-          Deck feedback
-        </span>
-      </div>
-
+    <Card eyebrow="Deck feedback" className="fade-up">
       {items.length === 0 ? (
         <Skeleton />
       ) : (
@@ -87,6 +82,6 @@ export default function DeckFeedbackPanel({
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
