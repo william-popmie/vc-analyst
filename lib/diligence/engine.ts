@@ -1,6 +1,7 @@
 import { computeGaps, emptyForm } from "@/lib/diligence/form-schema";
 import { fillFields } from "@/lib/diligence/fill-fields";
 import { scoreCard } from "@/lib/diligence/score";
+import { reviewDeck } from "@/lib/diligence/feedback";
 import { research } from "@/lib/diligence/research";
 import { getWriterProvider } from "@/lib/diligence/provider-config";
 import {
@@ -22,7 +23,8 @@ import type {
  *   1. extract  — fill what the deck says (fast, deck-sourced)
  *   2. research — web search to verify/augment (search/source/note events)
  *   3. complete — fill the gaps + the scorecard (web-sourced)
- *   4. verdict  — the custom invest model (stubbed for now)
+ *   4. review   — critique the deck itself (gaps/weaknesses/strengths)
+ *   5. verdict  — the custom invest model (stubbed for now)
  *
  * Each field arrives as a live `field` event; the API route and UI only depend
  * on `DueDiligenceForm` + `ProgressEvent`.
@@ -76,7 +78,19 @@ class PipelineDiligenceEngine implements DiligenceEngine {
       emit,
     });
 
-    // 5. Investment verdict from the custom ONNX model.
+    // 5. Critique the deck itself — gaps, weaknesses, and strengths, grounded
+    //    in the playbook and research signals gathered above.
+    emit({ type: "status", phase: "completing", message: "Reviewing the pitch deck" });
+    await reviewDeck({
+      provider,
+      deckText: input.deckText,
+      research: researchResult,
+      playbook: input.playbook,
+      form,
+      emit,
+    });
+
+    // 6. Investment verdict from the custom ONNX model.
     emit({ type: "status", phase: "verdict", message: "Running the investment model" });
     const verdict = await predictInvest(form.scorecard);
     form.verdict = verdict;
