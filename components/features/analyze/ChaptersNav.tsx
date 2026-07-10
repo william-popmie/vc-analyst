@@ -57,7 +57,16 @@ export default function ChaptersNav({
     const ids = rows.filter((r) => r.id !== "document").map((r) => r.id);
 
     function update() {
-      const rootTop = root!.getBoundingClientRect().top;
+      const r = root!;
+      // At the very bottom of the scroll, short trailing sections may never
+      // cross the activation line (there's no more room to scroll them up)
+      // — force the last one active so the nav doesn't get stuck mid-list.
+      if (r.scrollTop + r.clientHeight >= r.scrollHeight - 2) {
+        const last = ids[ids.length - 1];
+        if (last) setActiveId(last);
+        return;
+      }
+      const rootTop = r.getBoundingClientRect().top;
       let current = ids[0] ?? null;
       for (const id of ids) {
         const el = document.getElementById(id);
@@ -85,39 +94,60 @@ export default function ChaptersNav({
   const docReached = activeId?.startsWith("doc-") ?? false;
 
   return (
-    <nav className="sticky top-20 hidden max-h-[calc(100dvh-6rem)] self-start overflow-y-auto lg:block">
-      <p className="mb-3 pl-[18px] text-[10px] font-semibold uppercase tracking-[0.16em] text-ink/35">
-        On this page
+    <nav
+      className={
+        "group sticky top-20 z-10 block w-6 max-h-[calc(100dvh-6rem)] self-start overflow-hidden " +
+        "rounded-xl transition-[width] duration-150 hover:z-20 hover:w-[200px] hover:overflow-visible " +
+        "hover:bg-paper hover:px-2 hover:shadow-lg lg:w-[190px] lg:overflow-visible lg:bg-transparent " +
+        "lg:px-0 lg:shadow-none"
+      }
+    >
+      <p
+        className={
+          "mb-3 hidden whitespace-nowrap pl-[18px] text-[10px] font-semibold uppercase tracking-[0.16em] " +
+          "text-ink/35 group-hover:block lg:block"
+        }
+      >
+        Chapters
       </p>
-      <ul>
+      <ul className="max-h-[calc(100dvh-9rem)] overflow-y-auto">
         {rows.map((row, i) => {
           const isActive = row.id === activeId || (row.id === "document" && docReached);
           const isPast = activeIndex >= 0 && i < activeIndex;
           const lit = isActive || isPast;
           return (
             <li key={row.id} className="relative">
-              <span
-                className={
-                  "absolute left-[3px] top-0 h-full w-px " + (lit ? "bg-accent/50" : "bg-ink/12")
-                }
-              />
+              {row.depth === 1 ? (
+                <span
+                  className={
+                    "absolute left-[18px] top-0 h-full w-px " + (lit ? "bg-accent/40" : "bg-ink/10")
+                  }
+                />
+              ) : (
+                <span
+                  className={
+                    "absolute left-[3px] top-0 h-full w-px " + (lit ? "bg-accent/50" : "bg-ink/12")
+                  }
+                />
+              )}
               <button
                 onClick={() => jumpTo(row.id)}
                 className={
                   "relative block w-full py-1.5 pr-2 text-left transition-colors " +
-                  (row.depth === 1 ? "pl-[26px]" : "pl-[18px]")
+                  (row.depth === 1 ? "pl-[38px]" : "pl-[18px]")
                 }
               >
                 <span
                   className={
                     "absolute top-1/2 -translate-y-1/2 rounded-full ring-2 ring-paper transition-colors " +
-                    (row.depth === 1 ? "left-[1px] h-1.5 w-1.5" : "left-0 h-[7px] w-[7px]") +
+                    (row.depth === 1 ? "left-[16px] h-1.5 w-1.5" : "left-0 h-[7px] w-[7px]") +
                     " " +
                     (isActive ? "bg-accent" : lit ? "bg-accent/50" : "bg-ink/25")
                   }
                 />
                 <span
                   className={
+                    "hidden whitespace-nowrap group-hover:inline lg:inline " +
                     (row.depth === 1 ? "text-[11px] " : "text-xs ") +
                     (isActive
                       ? "font-medium text-ink"

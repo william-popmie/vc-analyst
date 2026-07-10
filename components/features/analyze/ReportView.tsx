@@ -1,6 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
+import Footer from "@/components/layout/Footer";
 import ChaptersNav from "./ChaptersNav";
 import { REPORT_SECTIONS } from "./reportSections";
 import type { AnalysisState } from "./streamState";
@@ -24,7 +25,7 @@ export default function ReportView({
   const sections = REPORT_SECTIONS.filter((s) => s.available(state));
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[190px_minmax(0,1fr)] lg:gap-10">
+    <div className="grid grid-cols-[24px_minmax(0,1fr)] gap-4 lg:grid-cols-[190px_minmax(0,1fr)] lg:gap-10">
       <ChaptersNav sections={sections} scrollRef={scrollRef} />
       <div className="min-w-0 space-y-8">
         {sections.map((s) => (
@@ -32,6 +33,7 @@ export default function ReportView({
             {s.render(state, active)}
           </section>
         ))}
+        <Footer />
       </div>
     </div>
   );
