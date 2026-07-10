@@ -1,6 +1,6 @@
 "use client";
 
-import { DD_SECTIONS, type FieldDescriptor } from "@/lib/diligence/form-schema";
+import { DOC_SECTIONS, sectionSlug, type FieldDescriptor } from "@/lib/diligence/form-schema";
 import type { DueDiligenceForm, Field, FieldSource } from "@/lib/diligence/types";
 
 function readField(form: DueDiligenceForm, key: string): Field | null {
@@ -164,10 +164,6 @@ export default function DueDiligenceFormView({
   form: DueDiligenceForm;
   active?: boolean;
 }) {
-  // The Scorecard (model inputs) and the Sources list are shown separately,
-  // "behind the scenes" — they're not part of the DD document a VC hands over.
-  const docSections = DD_SECTIONS.filter((s) => s.title !== "Scorecard");
-
   return (
     <div className="overflow-hidden rounded-3xl border border-ink/15 bg-white/60 shadow-sm backdrop-blur">
       <div className="border-b border-ink/10 px-4 py-3">
@@ -179,8 +175,8 @@ export default function DueDiligenceFormView({
         </p>
       </div>
       <SourceLegend />
-      {docSections.map((section) => (
-        <section key={section.title}>
+      {DOC_SECTIONS.map((section) => (
+        <section key={section.title} id={sectionSlug(section.title)} className="scroll-mt-24">
           <div className="bg-ink px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-paper">
             {section.title}
           </div>

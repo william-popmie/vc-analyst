@@ -94,6 +94,18 @@ export const DD_SECTIONS: FormSection[] = [
 /** Flat, ordered list of every field descriptor. */
 export const FIELD_DESCRIPTORS: FieldDescriptor[] = DD_SECTIONS.flatMap((s) => s.fields);
 
+/**
+ * Stable anchor id for a document sub-section, shared by the rendered section
+ * and the chapters nav so scroll-spy / jump-links line up. e.g. "Company
+ * Overview" → "doc-company-overview".
+ */
+export function sectionSlug(title: string): string {
+  return "doc-" + title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+/** The document sub-sections shown in the DD form (the Scorecard is separate). */
+export const DOC_SECTIONS: FormSection[] = DD_SECTIONS.filter((s) => s.title !== "Scorecard");
+
 /** Keys of the scorecard rating metrics (1–5), in model-feature order. */
 export const SCORECARD_METRIC_KEYS = [
   "team",

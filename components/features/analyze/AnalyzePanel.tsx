@@ -2,12 +2,8 @@
 
 import { useEffect, useReducer, useRef, useState } from "react";
 import Dropzone from "@/components/ui/Dropzone";
-import ResearchLog from "@/components/features/analyze/ResearchLog";
 import PhaseStepper from "@/components/features/analyze/PhaseStepper";
-import DueDiligenceFormView from "@/components/features/form/DueDiligenceFormView";
-import ScorecardPanel from "@/components/features/form/ScorecardPanel";
-import VerdictPopup from "@/components/features/form/VerdictPopup";
-import DeckFeedbackPanel from "@/components/features/form/DeckFeedbackPanel";
+import ReportView from "@/components/features/analyze/ReportView";
 import { initialState, streamReducer } from "@/components/features/analyze/streamState";
 import { readProgressStream } from "@/lib/diligence/stream";
 
@@ -20,6 +16,7 @@ export default function AnalyzePanel() {
   const [open, setOpen] = useState(false);
   const [stream, dispatch] = useReducer(streamReducer, undefined, initialState);
   const abortRef = useRef<AbortController | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Lock the page behind the takeover so it can't scroll into view.
   useEffect(() => {
@@ -110,9 +107,9 @@ export default function AnalyzePanel() {
 
       {/* Full-screen analysis takeover */}
       {open && (
-        <div className="fixed inset-x-0 top-0 z-50 h-dvh overflow-y-auto bg-paper">
+        <div ref={scrollRef} className="fixed inset-x-0 top-0 z-50 h-dvh overflow-y-auto bg-paper">
           <div className="sticky top-0 z-10 border-b border-ink/10 bg-paper/85 backdrop-blur">
-            <div className="mx-auto flex max-w-3xl items-center gap-4 px-5 py-3">
+            <div className="mx-auto flex max-w-6xl items-center gap-4 px-5 py-3">
               <button
                 onClick={closeAnalysis}
                 className="shrink-0 rounded-full border border-ink/15 px-3 py-1.5 text-sm font-medium text-ink/70 transition-colors hover:bg-ink/5 hover:text-ink"
@@ -125,22 +122,14 @@ export default function AnalyzePanel() {
             </div>
           </div>
 
-          <div className="mx-auto max-w-3xl space-y-4 px-5 py-6">
+          <div className="mx-auto max-w-6xl px-5 py-6">
             {status === "error" && (
-              <p className="rounded-2xl border border-red-500/20 bg-red-500/5 px-5 py-4 text-sm text-red-700">
+              <p className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/5 px-5 py-4 text-sm text-red-700">
                 {error}
               </p>
             )}
-            {/* Verdict pins to the very top — it lands at the end of the run. */}
-            {stream.verdict && <VerdictPopup verdict={stream.verdict} />}
-            {/* Deck critique: gaps, weaknesses, and strengths in the deck itself. */}
-            <DeckFeedbackPanel items={stream.deckFeedback} active={loading} />
-            {/* The live "streaming thing": searches, sources, research notes. */}
-            <ResearchLog state={stream} active={loading} />
-            {/* Behind-the-scenes model inputs: scorecard stars + sources. */}
-            <ScorecardPanel form={stream.form} active={loading} />
-            {/* The due-diligence document itself. */}
-            <DueDiligenceFormView form={stream.form} active={loading} />
+            {/* Chapters nav + stacked full-width sections — see reportSections.tsx. */}
+            <ReportView state={stream} active={loading} scrollRef={scrollRef} />
           </div>
         </div>
       )}
