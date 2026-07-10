@@ -175,8 +175,8 @@ export default function DueDiligenceFormView({
         </p>
       </div>
       <SourceLegend />
-      {docSections.map((section) => (
-        <section key={section.title}>
+      {DOC_SECTIONS.map((section) => (
+        <section key={section.title} id={sectionSlug(section.title)} className="scroll-mt-24">
           <div className="bg-ink px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-paper">
             {section.title}
           </div>
