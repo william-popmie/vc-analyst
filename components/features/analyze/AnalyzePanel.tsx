@@ -16,6 +16,7 @@ export default function AnalyzePanel() {
   const [open, setOpen] = useState(false);
   const [stream, dispatch] = useReducer(streamReducer, undefined, initialState);
   const abortRef = useRef<AbortController | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Lock the page behind the takeover so it can't scroll into view.
   useEffect(() => {
@@ -106,7 +107,7 @@ export default function AnalyzePanel() {
 
       {/* Full-screen analysis takeover */}
       {open && (
-        <div className="fixed inset-x-0 top-0 z-50 h-dvh overflow-y-auto bg-paper">
+        <div ref={scrollRef} className="fixed inset-x-0 top-0 z-50 h-dvh overflow-y-auto bg-paper">
           <div className="sticky top-0 z-10 border-b border-ink/10 bg-paper/85 backdrop-blur">
             <div className="mx-auto flex max-w-6xl items-center gap-4 px-5 py-3">
               <button
@@ -127,9 +128,8 @@ export default function AnalyzePanel() {
                 {error}
               </p>
             )}
-            {/* Left rail: verdict, deck feedback, scorecard, research — see railCards.tsx.
-                Right column: the due-diligence document itself. */}
-            <ReportView state={stream} active={loading} />
+            {/* Chapters nav + stacked full-width sections — see reportSections.tsx. */}
+            <ReportView state={stream} active={loading} scrollRef={scrollRef} />
           </div>
         </div>
       )}

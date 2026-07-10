@@ -59,14 +59,14 @@ export default function ScorecardPanel({
   const { scorecard } = form;
   return (
     <Card eyebrow="Scorecard">
-      <div className="space-y-2 px-5 pb-4">
+      <div className="grid gap-x-8 gap-y-1 px-5 pb-4 sm:grid-cols-2 lg:grid-cols-3">
         {METRICS.map((m) => (
-          <div key={m.key} className="flex items-center justify-between gap-3 border-b border-ink/[0.06] py-1.5">
+          <div key={m.key} className="flex items-center justify-between gap-3 border-b border-ink/[0.06] py-2">
             <span className="text-sm text-ink/70">{m.label}</span>
             <Stars value={scorecard[m.key]} active={active} />
           </div>
         ))}
-        <div className="flex items-center justify-between gap-3 py-1.5">
+        <div className="flex items-center justify-between gap-3 border-b border-ink/[0.06] py-2">
           <span className="text-sm text-ink/70">Funding raised</span>
           {scorecard.funding > 0 ? (
             <span key={scorecard.funding} className="cell-pop font-mono text-sm tabular-nums text-ink">

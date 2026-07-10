@@ -20,21 +20,23 @@ const SEVERITY_META: Record<
 
 const SEVERITY_ORDER: DeckFeedbackSeverity[] = ["critical", "warning", "strength"];
 
-function FeedbackRow({ item }: { item: DeckFeedbackItem }) {
+function FeedbackCard({ item }: { item: DeckFeedbackItem }) {
   const meta = SEVERITY_META[item.severity];
   return (
-    <li className="cell-pop flex gap-3 border-b border-ink/[0.06] py-3 last:border-b-0">
-      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold text-ink">{item.title}</span>
-          <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${meta.badge}`}>
-            {item.category}
-          </span>
+    <div className="cell-pop rounded-xl border border-ink/10 bg-white/50 p-3">
+      <div className="flex items-start gap-2">
+        <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${meta.dot}`} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold text-ink">{item.title}</span>
+            <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${meta.badge}`}>
+              {item.category}
+            </span>
+          </div>
+          {item.detail && <p className="mt-1 text-sm leading-relaxed text-ink/70">{item.detail}</p>}
         </div>
-        {item.detail && <p className="mt-0.5 text-sm leading-relaxed text-ink/70">{item.detail}</p>}
       </div>
-    </li>
+    </div>
   );
 }
 
@@ -67,17 +69,19 @@ export default function DeckFeedbackPanel({
       {items.length === 0 ? (
         <Skeleton />
       ) : (
-        <div className="divide-y divide-ink/10">
+        <div className="grid gap-x-6 gap-y-5 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-3">
           {grouped.map((g) => (
-            <div key={g.severity} className="px-5 py-3">
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/40">
+            <div key={g.severity}>
+              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/40">
+                <span className={`h-1.5 w-1.5 rounded-full ${SEVERITY_META[g.severity].dot}`} />
                 {SEVERITY_META[g.severity].label}
+                <span className="text-ink/30">· {g.items.length}</span>
               </p>
-              <ul>
+              <div className="space-y-2">
                 {g.items.map((item, i) => (
-                  <FeedbackRow key={`${g.severity}-${i}`} item={item} />
+                  <FeedbackCard key={`${g.severity}-${i}`} item={item} />
                 ))}
-              </ul>
+              </div>
             </div>
           ))}
         </div>

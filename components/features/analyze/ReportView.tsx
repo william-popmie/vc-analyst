@@ -1,27 +1,38 @@
 "use client";
 
-import DueDiligenceFormView from "@/components/features/form/DueDiligenceFormView";
-import { RAIL_CARDS } from "./railCards";
+import type { RefObject } from "react";
+import ChaptersNav from "./ChaptersNav";
+import { REPORT_SECTIONS } from "./reportSections";
 import type { AnalysisState } from "./streamState";
 
 /**
- * The two-column results layout: a left rail of "what the model produced
- * about the deck" cards (verdict, feedback, scorecard, research — driven by
- * the RAIL_CARDS registry) beside the due-diligence document, which owns the
- * wider right column as the actual deliverable. Used for both the live
- * streaming run and the finished report — `active` toggles skeleton states.
+ * The results layout: a sticky "chapters" nav beside a single column of
+ * full-width sections stacked top to bottom (verdict → feedback → scorecard →
+ * research → document, driven by the REPORT_SECTIONS registry). Everything is
+ * visible at once — the nav gives structure and lets you jump around a long,
+ * calmly-spaced scroll. Used for both the live run and the finished report.
  */
-export default function ReportView({ state, active }: { state: AnalysisState; active: boolean }) {
-  const cards = RAIL_CARDS.filter((c) => c.available(state));
+export default function ReportView({
+  state,
+  active,
+  scrollRef,
+}: {
+  state: AnalysisState;
+  active: boolean;
+  scrollRef: RefObject<HTMLElement | null>;
+}) {
+  const sections = REPORT_SECTIONS.filter((s) => s.available(state));
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start lg:gap-6">
-      <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-        {cards.map((c) => (
-          <div key={c.id}>{c.render(state, active)}</div>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[190px_minmax(0,1fr)] lg:gap-10">
+      <ChaptersNav sections={sections} scrollRef={scrollRef} />
+      <div className="min-w-0 space-y-8">
+        {sections.map((s) => (
+          <section key={s.id} id={s.id} className="scroll-mt-24">
+            {s.render(state, active)}
+          </section>
         ))}
       </div>
-      <DueDiligenceFormView form={state.form} active={active} />
     </div>
   );
 }
