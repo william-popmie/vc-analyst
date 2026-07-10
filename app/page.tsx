@@ -2,12 +2,27 @@ import Link from "next/link";
 import Hero from "@/components/features/hero/Hero";
 import AnalyzePanel from "@/components/features/analyze/AnalyzePanel";
 import SampleMemoPreview from "@/components/features/landing/SampleMemoPreview";
+import FeedbackPreview from "@/components/features/landing/FeedbackPreview";
 
 export default function Home() {
   return (
     <div className="space-y-20">
       <Hero />
       <AnalyzePanel />
+
+      <section className="fade-up">
+        <div className="mb-6 text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+            The feedback a VC would never send you.
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-lg leading-relaxed text-muted">
+            A partner forms a sharp opinion of your deck in minutes — then sends a two-line
+            pass, if that. This is the part they keep to themselves: what&apos;s landing,
+            what&apos;s missing, and how you look to someone who Googles you before they reply.
+          </p>
+        </div>
+        <FeedbackPreview />
+      </section>
 
       <section className="fade-up">
         <div className="mb-6 text-center">

@@ -23,12 +23,12 @@ export default function Hero() {
       </h1>
 
       <p className="fade-up mt-6 max-w-xl text-lg leading-relaxed text-muted" style={{ animationDelay: "0.15s" }}>
-        This isn&apos;t your deck read back to you. It&apos;s the same thing I did every week as
-        a VC — {" "}
+        You&apos;ll get the read a VC actually gives your deck: what&apos;s strong, what&apos;s
+        missing, and how you look to an investor who Googles you first:{" "}
         <Link href="/playbook" className="font-medium text-ink underline decoration-marker decoration-2 underline-offset-4 transition-colors hover:decoration-accent">
-          the memo written about you
+          the critique a partner would write
         </Link>
-        , not by you.
+        , not the pitch you&apos;d write.
       </p>
 
       <div className="fade-up mt-8 flex flex-wrap gap-3" style={{ animationDelay: "0.25s" }}>
