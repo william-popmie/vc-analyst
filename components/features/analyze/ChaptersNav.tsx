@@ -96,10 +96,13 @@ export default function ChaptersNav({
   return (
     <nav
       className={
-        "group sticky top-20 z-10 block w-6 max-h-[calc(100dvh-6rem)] self-start overflow-hidden " +
-        "rounded-xl transition-[width] duration-150 hover:z-20 hover:w-[200px] hover:overflow-visible " +
-        "hover:bg-paper hover:px-2 hover:shadow-lg lg:w-[190px] lg:overflow-visible lg:bg-transparent " +
-        "lg:px-0 lg:shadow-none"
+        "group sticky top-1/2 z-10 block w-6 max-h-[calc(100dvh-10rem)] -translate-y-1/2 self-start " +
+        "overflow-hidden rounded-xl transition-[width] duration-150 " +
+        // The compact→expanded pop-out is for narrow widths only; at lg+ the full
+        // labelled rail is always shown, so it must never expand/shadow on hover.
+        "max-lg:hover:z-20 max-lg:hover:w-[200px] max-lg:hover:overflow-visible max-lg:hover:bg-paper " +
+        "max-lg:hover:px-2 max-lg:hover:shadow-lg " +
+        "lg:w-[190px] lg:overflow-visible lg:bg-transparent lg:px-0 lg:shadow-none"
       }
     >
       <p
@@ -133,7 +136,7 @@ export default function ChaptersNav({
               <button
                 onClick={() => jumpTo(row.id)}
                 className={
-                  "relative block w-full py-1.5 pr-2 text-left transition-colors " +
+                  "relative block w-full rounded-md py-2 pr-2 text-left transition-colors hover:bg-ink/[0.05] " +
                   (row.depth === 1 ? "pl-[38px]" : "pl-[18px]")
                 }
               >
