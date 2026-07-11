@@ -92,6 +92,13 @@ function usageOf(usage: Anthropic.Usage, model: string): TokenUsage {
   };
 }
 
+/** Log cache read/write/fresh token counts so caching can be verified in dev. */
+function logCacheUsage(label: string, usage: Anthropic.Usage): void {
+  console.log(
+    `[claude:${label}] input=${usage.input_tokens} cache_read=${usage.cache_read_input_tokens ?? 0} cache_write=${usage.cache_creation_input_tokens ?? 0} output=${usage.output_tokens}`,
+  );
+}
+
 /** Anthropic Claude adapter — translates the generic capabilities to the SDK. */
 export const claudeProvider: LlmProvider = {
   name: "claude",
