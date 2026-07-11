@@ -43,8 +43,8 @@ class PipelineDiligenceEngine implements DiligenceEngine {
     emit({ type: "status", phase: "extracting", message: "Reading the deck" });
     await fillFields({
       provider,
-      system: buildDeckExtractSystemPrompt(input.playbook),
-      user: buildDeckExtractUserPrompt(input.deckText),
+      system: buildDeckExtractSystemPrompt(input.playbook, input.deckText),
+      user: buildDeckExtractUserPrompt(),
       form,
       emit,
     });
@@ -61,8 +61,8 @@ class PipelineDiligenceEngine implements DiligenceEngine {
     emit({ type: "status", phase: "completing", message: "Completing the form" });
     await fillFields({
       provider,
-      system: buildCompleteSystemPrompt(input.playbook),
-      user: buildCompleteUserPrompt(input.deckText, researchResult),
+      system: buildCompleteSystemPrompt(input.playbook, input.deckText, researchResult),
+      user: buildCompleteUserPrompt(),
       form,
       emit,
     });

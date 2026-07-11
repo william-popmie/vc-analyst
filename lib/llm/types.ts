@@ -6,6 +6,20 @@
 
 export type Provider = "gemini" | "claude";
 
+/**
+ * One chunk of a system prompt. `cache` marks a breakpoint: everything up to
+ * and including this block is a candidate for prompt-cache reuse, so callers
+ * should order blocks stable-content-first (persona/playbook/deck) and put
+ * volatile, stage-specific instructions last, after any cached block.
+ */
+export interface SystemBlock {
+  text: string;
+  cache?: boolean;
+}
+
+/** A system prompt is either a plain string or an ordered list of blocks. */
+export type SystemPrompt = string | SystemBlock[];
+
 /** A web page consulted during research. */
 export interface WebSource {
   title: string;
@@ -14,7 +28,7 @@ export interface WebSource {
 
 export interface ResearchArgs {
   /** System / instruction prompt. */
-  system: string;
+  system: SystemPrompt;
   /** User prompt (the deck text + task). */
   user: string;
   /** Called with each search query as it happens. */
@@ -33,7 +47,7 @@ export interface ResearchOutput {
 }
 
 export interface GenerateArgs {
-  system: string;
+  system: SystemPrompt;
   user: string;
   /** Called with each incremental chunk of the generated text. */
   onText?: (delta: string) => void;

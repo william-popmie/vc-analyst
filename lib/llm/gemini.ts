@@ -5,6 +5,7 @@ import type {
   LlmProvider,
   ResearchArgs,
   ResearchOutput,
+  SystemPrompt,
   WebSource,
 } from "./types";
 
@@ -19,6 +20,15 @@ const GENERATE_MAX_TOKENS = 16000;
 
 function ai(): GoogleGenAI {
   return new GoogleGenAI({ apiKey: getGeminiApiKey() });
+}
+
+/**
+ * Gemini has no explicit cache_control here, so a SystemPrompt's blocks are
+ * just joined back into one string in order — same content, same behavior.
+ */
+function toSystemInstruction(system: SystemPrompt): string {
+  if (typeof system === "string") return system;
+  return system.map((b) => b.text).join("\n\n");
 }
 
 /** Google Gemini adapter — translates the generic capabilities to the SDK. */
@@ -43,7 +53,7 @@ export const geminiProvider: LlmProvider = {
       model: GEMINI_MODEL_ID,
       contents: user,
       // Google Search grounding — the equivalent of Claude's web_search.
-      config: { systemInstruction: system, tools: [{ googleSearch: {} }] },
+      config: { systemInstruction: toSystemInstruction(system), tools: [{ googleSearch: {} }] },
     });
 
     const sources: WebSource[] = [];
@@ -91,7 +101,7 @@ export const geminiProvider: LlmProvider = {
       model: GEMINI_MODEL_ID,
       contents: user,
       config: {
-        systemInstruction: system,
+        systemInstruction: toSystemInstruction(system),
         maxOutputTokens: GENERATE_MAX_TOKENS,
         thinkingConfig: { thinkingBudget: 0 },
       },

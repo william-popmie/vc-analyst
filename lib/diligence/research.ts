@@ -32,8 +32,8 @@ export async function research(
   const emit: ProgressCallback = onEvent ?? (() => {});
 
   return getProvider(getResearchProvider()).researchWeb({
-    system: buildResearchSystemPrompt(playbook),
-    user: buildResearchUserPrompt(deckText, ctx?.companyName ?? "", ctx?.gaps ?? []),
+    system: buildResearchSystemPrompt(playbook, deckText),
+    user: buildResearchUserPrompt(ctx?.companyName ?? "", ctx?.gaps ?? []),
     onSearch: (query) => emit({ type: "search", query }),
     onSource: (source) => emit({ type: "source", ...source }),
     onText: (text) => emit({ type: "note", text }),

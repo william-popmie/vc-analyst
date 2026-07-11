@@ -5,6 +5,7 @@ import type {
   LlmProvider,
   ResearchArgs,
   ResearchOutput,
+  SystemPrompt,
   WebSource,
 } from "./types";
 
@@ -25,6 +26,21 @@ function client(): Anthropic {
   return new Anthropic({ apiKey: getAnthropicApiKey() });
 }
 
+/**
+ * Render a SystemPrompt into the SDK's system param, applying `cache_control`
+ * breakpoints where marked. Blocks must be ordered stable-content-first so the
+ * cached prefix stays byte-identical across calls that share it (persona,
+ * playbook, deck text, research findings) — see lib/diligence/prompt.ts.
+ */
+function toSystem(system: SystemPrompt): string | Anthropic.TextBlockParam[] {
+  if (typeof system === "string") return system;
+  return system.map((b) => ({
+    type: "text" as const,
+    text: b.text,
+    ...(b.cache ? { cache_control: { type: "ephemeral" as const } } : {}),
+  }));
+}
+
 /** Join the text blocks of a message into one trimmed string. */
 function textOf(content: Anthropic.ContentBlock[]): string {
   return content
@@ -32,6 +48,13 @@ function textOf(content: Anthropic.ContentBlock[]): string {
     .map((b) => b.text)
     .join("\n")
     .trim();
+}
+
+/** Log cache read/write/fresh token counts so caching can be verified in dev. */
+function logCacheUsage(label: string, usage: Anthropic.Usage): void {
+  console.log(
+    `[claude:${label}] input=${usage.input_tokens} cache_read=${usage.cache_read_input_tokens ?? 0} cache_write=${usage.cache_creation_input_tokens ?? 0} output=${usage.output_tokens}`,
+  );
 }
 
 /** Anthropic Claude adapter — translates the generic capabilities to the SDK. */
@@ -69,7 +92,7 @@ export const claudeProvider: LlmProvider = {
     const params = {
       model: MODEL_ID,
       max_tokens: RESEARCH_MAX_TOKENS,
-      system,
+      system: toSystem(system),
       tools: [webSearchTool],
       output_config: { effort: "medium" as const },
     };
@@ -103,6 +126,7 @@ export const claudeProvider: LlmProvider = {
     let stream = c.messages.stream({ ...params, messages });
     attach(stream);
     let response = await stream.finalMessage();
+    logCacheUsage("research", response.usage);
 
     // The web_search tool runs a server-side loop; resume on pause_turn.
     let continuations = 0;
@@ -111,6 +135,7 @@ export const claudeProvider: LlmProvider = {
       stream = c.messages.stream({ ...params, messages });
       attach(stream);
       response = await stream.finalMessage();
+      logCacheUsage("research-continuation", response.usage);
       continuations += 1;
     }
 
@@ -122,10 +147,12 @@ export const claudeProvider: LlmProvider = {
     const stream = client().messages.stream({
       model: MODEL_ID,
       max_tokens: WRITE_MAX_TOKENS,
-      system,
+      system: toSystem(system),
       messages: [{ role: "user", content: user }],
     });
     if (onText) stream.on("text", (delta: string) => onText(delta));
-    return textOf((await stream.finalMessage()).content);
+    const response = await stream.finalMessage();
+    logCacheUsage("generate", response.usage);
+    return textOf(response.content);
   },
 };
