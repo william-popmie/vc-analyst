@@ -15,6 +15,9 @@ const MAX_SEARCHES = 8; // research breadth — enough to chase each missing fac
 const RESEARCH_MAX_TOKENS = 8000;
 const WRITE_MAX_TOKENS = 16000;
 const OCR_MAX_TOKENS = 16000;
+// Per-attempt cap so a stuck request fails fast and visibly instead of hanging
+// on the SDK's own ~10-minute default — well under the route's 300s budget.
+const REQUEST_TIMEOUT_MS = 90_000;
 
 const webSearchTool = {
   type: "web_search_20260209" as const,
@@ -57,32 +60,45 @@ function logCacheUsage(label: string, usage: Anthropic.Usage): void {
   );
 }
 
+/**
+ * Log the instant a call is sent, before awaiting anything. Without this, a
+ * hung request produces zero output — logCacheUsage only fires on success, so
+ * there'd be no way to tell "never sent" from "stuck waiting" from the logs.
+ */
+function logDispatch(label: string): void {
+  console.log(`[claude:${label}] dispatching…`);
+}
+
 /** Anthropic Claude adapter — translates the generic capabilities to the SDK. */
 export const claudeProvider: LlmProvider = {
   name: "claude",
 
   async transcribePdf(pdf, instruction) {
     // Stream to avoid HTTP timeouts on long transcriptions; we only need text.
-    const stream = client().messages.stream({
-      model: OCR_MODEL_ID,
-      max_tokens: OCR_MAX_TOKENS,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "document",
-              source: {
-                type: "base64",
-                media_type: "application/pdf",
-                data: pdf.toString("base64"),
+    logDispatch("transcribe");
+    const stream = client().messages.stream(
+      {
+        model: OCR_MODEL_ID,
+        max_tokens: OCR_MAX_TOKENS,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "document",
+                source: {
+                  type: "base64",
+                  media_type: "application/pdf",
+                  data: pdf.toString("base64"),
+                },
               },
-            },
-            { type: "text", text: instruction },
-          ],
-        },
-      ],
-    });
+              { type: "text", text: instruction },
+            ],
+          },
+        ],
+      },
+      { timeout: REQUEST_TIMEOUT_MS },
+    );
     return textOf((await stream.finalMessage()).content);
   },
 
@@ -123,7 +139,8 @@ export const claudeProvider: LlmProvider = {
       });
     };
 
-    let stream = c.messages.stream({ ...params, messages });
+    logDispatch("research");
+    let stream = c.messages.stream({ ...params, messages }, { timeout: REQUEST_TIMEOUT_MS });
     attach(stream);
     let response = await stream.finalMessage();
     logCacheUsage("research", response.usage);
@@ -132,10 +149,12 @@ export const claudeProvider: LlmProvider = {
     let continuations = 0;
     while (response.stop_reason === "pause_turn" && continuations < MAX_CONTINUATIONS) {
       messages.push({ role: "assistant", content: response.content });
-      stream = c.messages.stream({ ...params, messages });
+      const label = `research-continuation-${continuations + 1}`;
+      logDispatch(label);
+      stream = c.messages.stream({ ...params, messages }, { timeout: REQUEST_TIMEOUT_MS });
       attach(stream);
       response = await stream.finalMessage();
-      logCacheUsage("research-continuation", response.usage);
+      logCacheUsage(label, response.usage);
       continuations += 1;
     }
 
@@ -144,12 +163,16 @@ export const claudeProvider: LlmProvider = {
 
   async generateStream({ system, user, onText }) {
     // No tools — stream plain text (the pipeline parses NDJSON field lines).
-    const stream = client().messages.stream({
-      model: MODEL_ID,
-      max_tokens: WRITE_MAX_TOKENS,
-      system: toSystem(system),
-      messages: [{ role: "user", content: user }],
-    });
+    logDispatch("generate");
+    const stream = client().messages.stream(
+      {
+        model: MODEL_ID,
+        max_tokens: WRITE_MAX_TOKENS,
+        system: toSystem(system),
+        messages: [{ role: "user", content: user }],
+      },
+      { timeout: REQUEST_TIMEOUT_MS },
+    );
     if (onText) stream.on("text", (delta: string) => onText(delta));
     const response = await stream.finalMessage();
     logCacheUsage("generate", response.usage);
