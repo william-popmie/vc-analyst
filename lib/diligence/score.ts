@@ -1,5 +1,6 @@
 import { getProvider } from "@/lib/llm";
 import type { Provider } from "@/lib/llm";
+import { costOf } from "@/lib/llm/pricing";
 import {
   buildScorecardSystemPrompt,
   buildScorecardUserPrompt,
@@ -57,6 +58,7 @@ export async function scoreCard({
   const text = await getProvider(provider).generateStream({
     system: buildScorecardSystemPrompt(playbook),
     user: buildScorecardUserPrompt(deckText, research),
+    onUsage: (usage) => emit({ type: "usage", stage: "scorecard", usage, costUsd: costOf(usage) }),
   });
 
   const obj = extractObject(text);

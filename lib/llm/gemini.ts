@@ -5,8 +5,10 @@ import type {
   LlmProvider,
   ResearchArgs,
   ResearchOutput,
+  TokenUsage,
   WebSource,
 } from "./types";
+import type { GenerateContentResponseUsageMetadata } from "@google/genai";
 
 // All Gemini-specific knobs live here and nowhere else.
 const OCR_MAX_TOKENS = 16000;
@@ -21,11 +23,23 @@ function ai(): GoogleGenAI {
   return new GoogleGenAI({ apiKey: getGeminiApiKey() });
 }
 
+/** Normalize a Gemini `usageMetadata` object to the provider-agnostic shape. */
+function usageOf(usage: GenerateContentResponseUsageMetadata | undefined, model: string): TokenUsage {
+  return {
+    inputTokens: usage?.promptTokenCount ?? 0,
+    outputTokens: usage?.candidatesTokenCount ?? 0,
+    cacheReadTokens: usage?.cachedContentTokenCount ?? 0,
+    cacheCreationTokens: 0,
+    model,
+    provider: "gemini",
+  };
+}
+
 /** Google Gemini adapter — translates the generic capabilities to the SDK. */
 export const geminiProvider: LlmProvider = {
   name: "gemini",
 
-  async transcribePdf(pdf, instruction) {
+  async transcribePdf(pdf, instruction, onUsage) {
     const response = await ai().models.generateContent({
       model: GEMINI_OCR_MODEL_ID,
       contents: [
@@ -35,10 +49,11 @@ export const geminiProvider: LlmProvider = {
       // Thinking off — the whole budget goes to the transcription.
       config: { maxOutputTokens: OCR_MAX_TOKENS, thinkingConfig: { thinkingBudget: 0 } },
     });
+    onUsage?.(usageOf(response.usageMetadata, GEMINI_OCR_MODEL_ID));
     return (response.text ?? "").trim();
   },
 
-  async researchWeb({ system, user, onSearch, onSource, onText }): Promise<ResearchOutput> {
+  async researchWeb({ system, user, onSearch, onSource, onText, onUsage }): Promise<ResearchOutput> {
     const stream = await ai().models.generateContentStream({
       model: GEMINI_MODEL_ID,
       contents: user,
@@ -51,9 +66,11 @@ export const geminiProvider: LlmProvider = {
     const seenSources = new Set<string>();
     let findings = "";
     let lastFinish: string | undefined;
+    let lastUsage: GenerateContentResponseUsageMetadata | undefined;
 
     for await (const chunk of stream) {
       if (chunk.candidates?.[0]?.finishReason) lastFinish = chunk.candidates[0].finishReason;
+      if (chunk.usageMetadata) lastUsage = chunk.usageMetadata;
       if (chunk.text) {
         findings += chunk.text;
         onText?.(chunk.text); // surface findings prose live (observational only)
@@ -80,10 +97,11 @@ export const geminiProvider: LlmProvider = {
     }
 
     console.log(`[gemini.researchWeb] finish=${lastFinish} findingsLen=${findings.length} queries=${seenQueries.size} sources=${sources.length}`);
+    onUsage?.(usageOf(lastUsage, GEMINI_MODEL_ID));
     return { findings: findings.trim(), sources };
   },
 
-  async generateStream({ system, user, onText }) {
+  async generateStream({ system, user, onText, onUsage }) {
     // No tools — stream plain text (the pipeline parses NDJSON field lines). We
     // deliberately don't set responseMimeType json: the output is many JSON
     // lines, not one object.
@@ -97,12 +115,15 @@ export const geminiProvider: LlmProvider = {
       },
     });
     let text = "";
+    let lastUsage: GenerateContentResponseUsageMetadata | undefined;
     for await (const chunk of stream) {
+      if (chunk.usageMetadata) lastUsage = chunk.usageMetadata;
       if (chunk.text) {
         text += chunk.text;
         onText?.(chunk.text);
       }
     }
+    onUsage?.(usageOf(lastUsage, GEMINI_MODEL_ID));
     return text.trim();
   },
 };

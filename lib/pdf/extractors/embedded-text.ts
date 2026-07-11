@@ -10,6 +10,7 @@ import type { DeckTextExtractor } from "./types";
 export const embeddedTextExtractor: DeckTextExtractor = {
   name: "embedded-text",
   async extract(buffer: Buffer): Promise<string> {
+    // No LLM call — nothing to report on `onUsage`.
     const { extractText, getDocumentProxy } = await import("unpdf");
     const pdf = await getDocumentProxy(new Uint8Array(buffer));
     const { text } = await extractText(pdf, { mergePages: true });
