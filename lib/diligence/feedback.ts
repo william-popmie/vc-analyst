@@ -1,5 +1,6 @@
 import { getProvider } from "@/lib/llm";
 import type { Provider } from "@/lib/llm";
+import { costOf } from "@/lib/llm/pricing";
 import {
   buildDeckFeedbackSystemPrompt,
   buildDeckFeedbackUserPrompt,
@@ -81,6 +82,7 @@ export async function reviewDeck({
         if (line.trim()) handleLine(line);
       }
     },
+    onUsage: (usage) => emit({ type: "usage", stage: "feedback", usage, costUsd: costOf(usage) }),
   });
 
   // Flush any trailing line without a terminating newline.

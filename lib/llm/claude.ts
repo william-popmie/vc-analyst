@@ -6,6 +6,7 @@ import type {
   ResearchArgs,
   ResearchOutput,
   SystemPrompt,
+  TokenUsage,
   WebSource,
 } from "./types";
 
@@ -78,11 +79,24 @@ function logDispatch(label: string): void {
   console.log(`[claude:${label}] dispatching…`);
 }
 
+/** Normalize an Anthropic `Usage` object to the provider-agnostic shape. */
+function usageOf(usage: Anthropic.Usage, model: string): TokenUsage {
+  return {
+    inputTokens: usage.input_tokens,
+    outputTokens: usage.output_tokens,
+    cacheReadTokens: usage.cache_read_input_tokens ?? 0,
+    cacheCreationTokens: usage.cache_creation_input_tokens ?? 0,
+    webSearches: usage.server_tool_use?.web_search_requests,
+    model,
+    provider: "claude",
+  };
+}
+
 /** Anthropic Claude adapter — translates the generic capabilities to the SDK. */
 export const claudeProvider: LlmProvider = {
   name: "claude",
 
-  async transcribePdf(pdf, instruction) {
+  async transcribePdf(pdf, instruction, onUsage) {
     // Stream to avoid HTTP timeouts on long transcriptions; we only need text.
     logDispatch("transcribe");
     const stream = client().messages.stream(
@@ -108,10 +122,13 @@ export const claudeProvider: LlmProvider = {
       },
       { timeout: REQUEST_TIMEOUT_MS },
     );
-    return textOf((await stream.finalMessage()).content);
+    const message = await stream.finalMessage();
+    onUsage?.(usageOf(message.usage, OCR_MODEL_ID));
+    logCacheUsage("transcribe-pdf", message.usage);
+    return textOf(message.content);
   },
 
-  async researchWeb({ system, user, onSearch, onSource, onText }): Promise<ResearchOutput> {
+  async researchWeb({ system, user, onSearch, onSource, onText, onUsage }): Promise<ResearchOutput> {
     const c = client();
     const messages: Anthropic.MessageParam[] = [{ role: "user", content: user }];
     const params = {
@@ -152,6 +169,7 @@ export const claudeProvider: LlmProvider = {
     let stream = c.messages.stream({ ...params, messages }, { timeout: REQUEST_TIMEOUT_MS });
     attach(stream);
     let response = await stream.finalMessage();
+    onUsage?.(usageOf(response.usage, MODEL_ID));
     logCacheUsage("research", response.usage);
 
     // The web_search tool runs a server-side loop; resume on pause_turn.
@@ -163,6 +181,7 @@ export const claudeProvider: LlmProvider = {
       stream = c.messages.stream({ ...params, messages }, { timeout: REQUEST_TIMEOUT_MS });
       attach(stream);
       response = await stream.finalMessage();
+      onUsage?.(usageOf(response.usage, MODEL_ID));
       logCacheUsage(label, response.usage);
       continuations += 1;
     }
@@ -170,7 +189,7 @@ export const claudeProvider: LlmProvider = {
     return { findings: textOf(response.content), sources };
   },
 
-  async generateStream({ system, user, onText }) {
+  async generateStream({ system, user, onText, onUsage }) {
     // No tools — stream plain text (the pipeline parses NDJSON field lines).
     logDispatch("generate");
     const stream = client().messages.stream(
@@ -183,8 +202,9 @@ export const claudeProvider: LlmProvider = {
       { timeout: REQUEST_TIMEOUT_MS },
     );
     if (onText) stream.on("text", (delta: string) => onText(delta));
-    const response = await stream.finalMessage();
-    logCacheUsage("generate", response.usage);
-    return textOf(response.content);
+    const message = await stream.finalMessage();
+    onUsage?.(usageOf(message.usage, MODEL_ID));
+    logCacheUsage("generate", message.usage);
+    return textOf(message.content);
   },
 };

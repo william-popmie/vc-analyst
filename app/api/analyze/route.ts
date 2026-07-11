@@ -3,6 +3,9 @@ import { loadPlaybook } from "@/lib/playbook/load";
 import { getDiligenceEngine } from "@/lib/diligence/engine";
 import { EmptyDeckError } from "@/lib/diligence/types";
 import type { ProgressEvent } from "@/lib/diligence/types";
+import { costOf } from "@/lib/llm/pricing";
+
+const SHOW_COSTS = process.env.NODE_ENV !== "production";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // web research can take a while
@@ -41,9 +44,14 @@ export async function POST(req: Request) {
           // High-frequency note deltas — don't log each one server-side.
         } else if (event.type === "feedback") {
           console.log("[analyze] 📝 feedback:", event.item.severity, "—", event.item.title);
+        } else if (event.type === "usage") {
+          console.log(`[analyze] 💰 usage: ${event.stage} $${event.costUsd.toFixed(4)}`);
         } else {
           console.log("[analyze] •", event.phase, "—", event.message);
         }
+        // Usage events are a dev-only feature — never let them reach a
+        // production client, regardless of what's enqueued elsewhere.
+        if (event.type === "usage" && !SHOW_COSTS) return;
         if (closed) return;
         try {
           controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
@@ -66,7 +74,9 @@ export async function POST(req: Request) {
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
-        const deckText = await extractDeckText(buffer);
+        const deckText = await extractDeckText(buffer, (usage) =>
+          send({ type: "usage", stage: "ocr", usage, costUsd: costOf(usage) }),
+        );
         const playbook = loadPlaybook();
 
         const report = await getDiligenceEngine().run({ deckText, playbook }, send);

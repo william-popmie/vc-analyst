@@ -1,4 +1,5 @@
 import { getProvider } from "@/lib/llm";
+import { costOf } from "@/lib/llm/pricing";
 import { getResearchProvider } from "@/lib/diligence/provider-config";
 import {
   buildResearchSystemPrompt,
@@ -37,5 +38,6 @@ export async function research(
     onSearch: (query) => emit({ type: "search", query }),
     onSource: (source) => emit({ type: "source", ...source }),
     onText: (text) => emit({ type: "note", text }),
+    onUsage: (usage) => emit({ type: "usage", stage: "research", usage, costUsd: costOf(usage) }),
   });
 }
