@@ -99,6 +99,15 @@ function logCacheUsage(label: string, usage: Anthropic.Usage): void {
   );
 }
 
+/**
+ * Log the instant a call is sent, before awaiting anything. Without this, a
+ * hung request produces zero output — logCacheUsage only fires on success, so
+ * there'd be no way to tell "never sent" from "stuck waiting" from the logs.
+ */
+function logDispatch(label: string): void {
+  console.log(`[claude:${label}] dispatching…`);
+}
+
 /** Anthropic Claude adapter — translates the generic capabilities to the SDK. */
 export const claudeProvider: LlmProvider = {
   name: "claude",
