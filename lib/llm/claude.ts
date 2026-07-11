@@ -19,11 +19,20 @@ const OCR_MAX_TOKENS = 16000;
 // on the SDK's own ~10-minute default — well under the route's 300s budget.
 const REQUEST_TIMEOUT_MS = 90_000;
 
+// `allowed_callers: ["direct"]` is required on Haiku (it can't do programmatic
+// tool calling like Sonnet/Opus, so the API otherwise rejects the tool); it's
+// a no-op restriction on models that do support it, so it's safe to set
+// unconditionally regardless of which model MODEL_ID points at.
 const webSearchTool = {
   type: "web_search_20260209" as const,
   name: "web_search" as const,
   max_uses: MAX_SEARCHES,
+  allowed_callers: ["direct" as const],
 };
+
+// Haiku 4.5 rejects `output_config.effort` outright (400: "This model does
+// not support the effort parameter") — only Sonnet/Opus-tier models accept it.
+const SUPPORTS_EFFORT = !MODEL_ID.startsWith("claude-haiku");
 
 function client(): Anthropic {
   return new Anthropic({ apiKey: getAnthropicApiKey() });
@@ -110,7 +119,7 @@ export const claudeProvider: LlmProvider = {
       max_tokens: RESEARCH_MAX_TOKENS,
       system: toSystem(system),
       tools: [webSearchTool],
-      output_config: { effort: "medium" as const },
+      ...(SUPPORTS_EFFORT ? { output_config: { effort: "medium" as const } } : {}),
     };
 
     const sources: WebSource[] = [];

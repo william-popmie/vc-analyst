@@ -4,9 +4,13 @@
  */
 
 // The Claude model id used by the Claude diligence engine.
-// Sonnet 4.6 is fast + cost-effective for this public-facing research task and
-// supports the native web_search tool with dynamic filtering.
-export const MODEL_ID = "claude-sonnet-4-6";
+// Temporarily set to Haiku 4.5 for a speed test — fastest/cheapest tier.
+// Haiku *does* support the web_search tool, but needs `allowed_callers:
+// ["direct"]` explicitly set on the tool (lib/llm/claude.ts) since it can't do
+// programmatic tool calling like Sonnet/Opus, and it rejects `output_config.
+// effort` outright (also handled in claude.ts). Swap back to
+// "claude-sonnet-4-6" to restore the previous quality/speed balance.
+export const MODEL_ID = "claude-haiku-4-5";
 
 // Gemini model used by the Gemini diligence engine. 2.5 Flash is fast +
 // cost-effective and supports Google Search grounding (the equivalent of
