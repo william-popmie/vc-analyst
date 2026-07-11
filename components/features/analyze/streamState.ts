@@ -23,6 +23,14 @@ export interface Step {
   status: StepStatus;
 }
 
+/** Dev-only running token/cost total — never populated in production. */
+export interface UsageTotals {
+  totalCostUsd: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  byStage: Record<string, number>;
+}
+
 export interface AnalysisState {
   phase: DiligencePhase | "uploading";
   steps: Step[];
@@ -39,6 +47,8 @@ export interface AnalysisState {
   deckFeedback: DeckFeedbackItem[];
   startedAt: number | null;
   error: string | null;
+  /** Dev-only cost overlay data; stays null in production (no `usage` events arrive). */
+  usage: UsageTotals | null;
 }
 
 const STEP_ORDER: { phase: DiligencePhase; label: string }[] = [
@@ -63,6 +73,7 @@ export function initialState(): AnalysisState {
     deckFeedback: [],
     startedAt: Date.now(),
     error: null,
+    usage: null,
   };
 }
 
@@ -116,6 +127,22 @@ export function streamReducer(state: AnalysisState, action: StreamAction): Analy
 
     case "feedback":
       return { ...state, deckFeedback: [...state.deckFeedback, event.item] };
+
+    case "usage": {
+      const prev = state.usage ?? { totalCostUsd: 0, totalInputTokens: 0, totalOutputTokens: 0, byStage: {} };
+      return {
+        ...state,
+        usage: {
+          totalCostUsd: prev.totalCostUsd + event.costUsd,
+          totalInputTokens: prev.totalInputTokens + event.usage.inputTokens,
+          totalOutputTokens: prev.totalOutputTokens + event.usage.outputTokens,
+          byStage: {
+            ...prev.byStage,
+            [event.stage]: (prev.byStage[event.stage] ?? 0) + event.costUsd,
+          },
+        },
+      };
+    }
 
     case "report":
       return {

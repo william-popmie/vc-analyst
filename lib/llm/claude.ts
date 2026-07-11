@@ -5,6 +5,7 @@ import type {
   LlmProvider,
   ResearchArgs,
   ResearchOutput,
+  TokenUsage,
   WebSource,
 } from "./types";
 
@@ -34,11 +35,24 @@ function textOf(content: Anthropic.ContentBlock[]): string {
     .trim();
 }
 
+/** Normalize an Anthropic `Usage` object to the provider-agnostic shape. */
+function usageOf(usage: Anthropic.Usage, model: string): TokenUsage {
+  return {
+    inputTokens: usage.input_tokens,
+    outputTokens: usage.output_tokens,
+    cacheReadTokens: usage.cache_read_input_tokens ?? 0,
+    cacheCreationTokens: usage.cache_creation_input_tokens ?? 0,
+    webSearches: usage.server_tool_use?.web_search_requests,
+    model,
+    provider: "claude",
+  };
+}
+
 /** Anthropic Claude adapter — translates the generic capabilities to the SDK. */
 export const claudeProvider: LlmProvider = {
   name: "claude",
 
-  async transcribePdf(pdf, instruction) {
+  async transcribePdf(pdf, instruction, onUsage) {
     // Stream to avoid HTTP timeouts on long transcriptions; we only need text.
     const stream = client().messages.stream({
       model: OCR_MODEL_ID,
@@ -60,10 +74,12 @@ export const claudeProvider: LlmProvider = {
         },
       ],
     });
-    return textOf((await stream.finalMessage()).content);
+    const message = await stream.finalMessage();
+    onUsage?.(usageOf(message.usage, OCR_MODEL_ID));
+    return textOf(message.content);
   },
 
-  async researchWeb({ system, user, onSearch, onSource, onText }): Promise<ResearchOutput> {
+  async researchWeb({ system, user, onSearch, onSource, onText, onUsage }): Promise<ResearchOutput> {
     const c = client();
     const messages: Anthropic.MessageParam[] = [{ role: "user", content: user }];
     const params = {
@@ -103,6 +119,7 @@ export const claudeProvider: LlmProvider = {
     let stream = c.messages.stream({ ...params, messages });
     attach(stream);
     let response = await stream.finalMessage();
+    onUsage?.(usageOf(response.usage, MODEL_ID));
 
     // The web_search tool runs a server-side loop; resume on pause_turn.
     let continuations = 0;
@@ -111,13 +128,14 @@ export const claudeProvider: LlmProvider = {
       stream = c.messages.stream({ ...params, messages });
       attach(stream);
       response = await stream.finalMessage();
+      onUsage?.(usageOf(response.usage, MODEL_ID));
       continuations += 1;
     }
 
     return { findings: textOf(response.content), sources };
   },
 
-  async generateStream({ system, user, onText }) {
+  async generateStream({ system, user, onText, onUsage }) {
     // No tools — stream plain text (the pipeline parses NDJSON field lines).
     const stream = client().messages.stream({
       model: MODEL_ID,
@@ -126,6 +144,8 @@ export const claudeProvider: LlmProvider = {
       messages: [{ role: "user", content: user }],
     });
     if (onText) stream.on("text", (delta: string) => onText(delta));
-    return textOf((await stream.finalMessage()).content);
+    const message = await stream.finalMessage();
+    onUsage?.(usageOf(message.usage, MODEL_ID));
+    return textOf(message.content);
   },
 };

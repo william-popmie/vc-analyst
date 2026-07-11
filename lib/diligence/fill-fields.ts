@@ -1,5 +1,6 @@
 import { getProvider } from "@/lib/llm";
 import type { Provider } from "@/lib/llm";
+import { costOf } from "@/lib/llm/pricing";
 import { applyField, parseFieldLine } from "./parse";
 import type { DueDiligenceForm, ProgressCallback } from "./types";
 
@@ -10,6 +11,8 @@ interface FillArgs {
   /** The form to mutate as fields arrive. */
   form: DueDiligenceForm;
   emit: ProgressCallback;
+  /** Label for usage events — distinguishes the extract pass from the complete pass. */
+  stage: string;
 }
 
 /**
@@ -18,7 +21,7 @@ interface FillArgs {
  * `field` event — so the UI fills cells in real time. Used by both the
  * deck-extract pass and the completion pass.
  */
-export async function fillFields({ provider, system, user, form, emit }: FillArgs): Promise<void> {
+export async function fillFields({ provider, system, user, form, emit, stage }: FillArgs): Promise<void> {
   let buffer = "";
 
   const handleLine = (line: string) => {
@@ -41,6 +44,7 @@ export async function fillFields({ provider, system, user, form, emit }: FillArg
         if (line.trim()) handleLine(line);
       }
     },
+    onUsage: (usage) => emit({ type: "usage", stage, usage, costUsd: costOf(usage) }),
   });
 
   // Flush any trailing line without a terminating newline.

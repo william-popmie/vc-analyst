@@ -6,6 +6,8 @@
  * the field registry in form-schema.ts) and both sides follow.
  */
 
+import type { TokenUsage } from "@/lib/llm/types";
+
 export interface Source {
   title: string;
   url: string;
@@ -149,6 +151,8 @@ export type ProgressEvent =
   | { type: "note"; text: string }
   /** The invest/don't-invest verdict from the custom model. */
   | { type: "verdict"; verdict: InvestVerdict }
+  /** Token usage + cost for one LLM call. Dev-only — never sent in production. */
+  | { type: "usage"; stage: string; usage: TokenUsage; costUsd: number }
   /** Terminal success event — carries the assembled form. */
   | { type: "report"; report: DueDiligenceForm }
   /** Terminal failure event. */

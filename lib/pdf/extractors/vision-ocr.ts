@@ -10,7 +10,7 @@ import type { DeckTextExtractor } from "./types";
  */
 export const visionOcrExtractor: DeckTextExtractor = {
   name: "vision-ocr",
-  extract(buffer: Buffer): Promise<string> {
-    return getProvider(getOcrProvider()).transcribePdf(buffer, OCR_INSTRUCTION);
+  extract(buffer, onUsage) {
+    return getProvider(getOcrProvider()).transcribePdf(buffer, OCR_INSTRUCTION, onUsage);
   },
 };

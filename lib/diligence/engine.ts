@@ -47,6 +47,7 @@ class PipelineDiligenceEngine implements DiligenceEngine {
       user: buildDeckExtractUserPrompt(input.deckText),
       form,
       emit,
+      stage: "extract",
     });
 
     // 2. Research the web, targeting the fields the deck left empty.
@@ -65,6 +66,7 @@ class PipelineDiligenceEngine implements DiligenceEngine {
       user: buildCompleteUserPrompt(input.deckText, researchResult),
       form,
       emit,
+      stage: "complete",
     });
 
     // 4. Score the scorecard in its own dedicated pass — the sole input to the

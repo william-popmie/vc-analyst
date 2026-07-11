@@ -12,6 +12,18 @@ export interface WebSource {
   url: string;
 }
 
+/** Token usage for one LLM call, normalized across providers. */
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  /** Web searches the server-side tool ran during this call, if any. */
+  webSearches?: number;
+  model: string;
+  provider: Provider;
+}
+
 export interface ResearchArgs {
   /** System / instruction prompt. */
   system: string;
@@ -23,6 +35,8 @@ export interface ResearchArgs {
   onSource?: (source: WebSource) => void;
   /** Called with each incremental chunk of the model's research notes text. */
   onText?: (delta: string) => void;
+  /** Called once per underlying API round-trip with that call's token usage. */
+  onUsage?: (usage: TokenUsage) => void;
 }
 
 export interface ResearchOutput {
@@ -37,6 +51,8 @@ export interface GenerateArgs {
   user: string;
   /** Called with each incremental chunk of the generated text. */
   onText?: (delta: string) => void;
+  /** Called once with this call's token usage. */
+  onUsage?: (usage: TokenUsage) => void;
 }
 
 /**
@@ -48,7 +64,7 @@ export interface LlmProvider {
   readonly name: Provider;
 
   /** OCR: transcribe an image-only / scanned PDF to plain text. */
-  transcribePdf(pdf: Buffer, instruction: string): Promise<string>;
+  transcribePdf(pdf: Buffer, instruction: string, onUsage?: (usage: TokenUsage) => void): Promise<string>;
 
   /** Research the web; stream queries/sources; return findings + sources. */
   researchWeb(args: ResearchArgs): Promise<ResearchOutput>;

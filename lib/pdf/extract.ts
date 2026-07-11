@@ -1,5 +1,6 @@
 import { EmptyDeckError } from "@/lib/diligence/types";
 import { getDeckTextExtractors } from "@/lib/pdf/extractors";
+import type { TokenUsage } from "@/lib/llm/types";
 
 /** Minimum characters for a deck to count as "readable" rather than empty. */
 const MIN_DECK_CHARS = 80;
@@ -16,12 +17,15 @@ const MIN_DECK_CHARS = 80;
  *
  * The pipeline downstream is untouched — it still just receives a string.
  */
-export async function extractDeckText(buffer: Buffer): Promise<string> {
+export async function extractDeckText(
+  buffer: Buffer,
+  onUsage?: (usage: TokenUsage) => void,
+): Promise<string> {
   let lastError: unknown;
 
   for (const extractor of getDeckTextExtractors()) {
     try {
-      const text = await extractor.extract(buffer);
+      const text = await extractor.extract(buffer, onUsage);
       if (text.length >= MIN_DECK_CHARS) {
         return text;
       }
