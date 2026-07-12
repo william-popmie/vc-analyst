@@ -30,8 +30,18 @@ export function parseFieldLine(line: string): ParsedField | null {
   }
 }
 
+export function cleanDashes(text: string): string {
+  if (!text) return text;
+  return text
+    .replace(/(\d)\s*[\u2013\u2014]\s*(\d)/g, "$1-$2")
+    .replace(/\s*[\u2013\u2014]\s*/g, " - ")
+    .replace(/\s*--\s*/g, " - ")
+    .replace(/ {2,}/g, " ");
+}
+
 function str(v: unknown): string {
-  return typeof v === "string" ? v : v == null ? "" : String(v);
+  const s = typeof v === "string" ? v : v == null ? "" : String(v);
+  return cleanDashes(s);
 }
 
 function clampRating(v: unknown): number {
