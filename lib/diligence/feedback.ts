@@ -73,6 +73,7 @@ export async function reviewDeck({
   await getProvider(provider).generateStream({
     system: buildDeckFeedbackSystemPrompt(playbook, deckText, research),
     user: buildDeckFeedbackUserPrompt(),
+    model: "smart",
     onText: (delta) => {
       buffer += delta;
       let newline: number;

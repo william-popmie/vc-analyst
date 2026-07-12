@@ -1,9 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { MODEL_ID, OCR_MODEL_ID, getAnthropicApiKey } from "@/lib/config";
 import type {
-  GenerateArgs,
   LlmProvider,
-  ResearchArgs,
   ResearchOutput,
   SystemPrompt,
   TokenUsage,
@@ -189,12 +187,13 @@ export const claudeProvider: LlmProvider = {
     return { findings: textOf(response.content), sources };
   },
 
-  async generateStream({ system, user, onText, onUsage }) {
+  async generateStream({ system, user, model, onText, onUsage }) {
     // No tools — stream plain text (the pipeline parses NDJSON field lines).
-    logDispatch("generate");
+    const selectedModel = model === "smart" ? OCR_MODEL_ID : MODEL_ID;
+    logDispatch(`generate:${selectedModel}`);
     const stream = client().messages.stream(
       {
-        model: MODEL_ID,
+        model: selectedModel,
         max_tokens: WRITE_MAX_TOKENS,
         system: toSystem(system),
         messages: [{ role: "user", content: user }],
@@ -203,8 +202,8 @@ export const claudeProvider: LlmProvider = {
     );
     if (onText) stream.on("text", (delta: string) => onText(delta));
     const message = await stream.finalMessage();
-    onUsage?.(usageOf(message.usage, MODEL_ID));
-    logCacheUsage("generate", message.usage);
+    onUsage?.(usageOf(message.usage, selectedModel));
+    logCacheUsage(`generate:${selectedModel}`, message.usage);
     return textOf(message.content);
   },
 };

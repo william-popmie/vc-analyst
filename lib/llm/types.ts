@@ -63,6 +63,8 @@ export interface ResearchOutput {
 export interface GenerateArgs {
   system: SystemPrompt;
   user: string;
+  /** The model tier to use: fast (Haiku) or smart (Sonnet). Defaults to "fast". */
+  model?: "fast" | "smart";
   /** Called with each incremental chunk of the generated text. */
   onText?: (delta: string) => void;
   /** Called once with this call's token usage. */

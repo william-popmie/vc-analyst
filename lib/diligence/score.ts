@@ -58,6 +58,7 @@ export async function scoreCard({
   const text = await getProvider(provider).generateStream({
     system: buildScorecardSystemPrompt(playbook, deckText, research),
     user: buildScorecardUserPrompt(),
+    model: "smart",
     onUsage: (usage) => emit({ type: "usage", stage: "scorecard", usage, costUsd: costOf(usage) }),
   });
 

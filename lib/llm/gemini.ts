@@ -1,9 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { GEMINI_MODEL_ID, GEMINI_OCR_MODEL_ID, getGeminiApiKey } from "@/lib/config";
 import type {
-  GenerateArgs,
   LlmProvider,
-  ResearchArgs,
   ResearchOutput,
   SystemPrompt,
   TokenUsage,
@@ -115,8 +113,9 @@ export const geminiProvider: LlmProvider = {
     // No tools — stream plain text (the pipeline parses NDJSON field lines). We
     // deliberately don't set responseMimeType json: the output is many JSON
     // lines, not one object.
+    const selectedModel = GEMINI_MODEL_ID;
     const stream = await ai().models.generateContentStream({
-      model: GEMINI_MODEL_ID,
+      model: selectedModel,
       contents: user,
       config: {
         systemInstruction: toSystemInstruction(system),
@@ -133,7 +132,7 @@ export const geminiProvider: LlmProvider = {
         onText?.(chunk.text);
       }
     }
-    onUsage?.(usageOf(lastUsage, GEMINI_MODEL_ID));
+    onUsage?.(usageOf(lastUsage, selectedModel));
     return text.trim();
   },
 };
