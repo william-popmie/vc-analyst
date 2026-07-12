@@ -110,7 +110,7 @@ function FieldValue({
 }
 
 function Skeleton({ active }: { active: boolean }) {
-  if (!active) return <span className="text-ink/30">—</span>;
+  if (!active) return <span className="text-ink/30">-</span>;
   return <span className="inline-block h-3 w-28 animate-pulse rounded bg-ink/10 align-middle" />;
 }
 
@@ -168,10 +168,10 @@ export default function DueDiligenceFormView({
     <div className="overflow-hidden rounded-3xl border border-ink/15 bg-white/60 shadow-sm backdrop-blur">
       <div className="border-b border-ink/10 px-4 py-3">
         <p className="text-sm font-semibold text-ink">
-          The due-diligence memo — the same worksheet a VC fills in.
+          The due-diligence memo, the same worksheet a VC fills in.
         </p>
         <p className="mt-0.5 text-xs text-muted">
-          Watch where each answer comes from — a summary could only ever show &ldquo;deck&rdquo;.
+          Watch where each answer comes from - a summary could only ever show &ldquo;deck&rdquo;.
         </p>
       </div>
       <SourceLegend />

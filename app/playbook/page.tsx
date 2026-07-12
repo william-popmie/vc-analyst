@@ -44,7 +44,7 @@ export default function PlaybookPage() {
           How I evaluated <span className="marker">800+ decks</span>
         </h1>
         <p className="text-lg text-muted max-w-xl leading-relaxed">
-          The exact criteria the AI uses — drawn from a year of weekly deal reviews,
+          The exact criteria the AI uses, drawn from a year of weekly deal reviews,
           not generic startup advice.
         </p>
       </header>

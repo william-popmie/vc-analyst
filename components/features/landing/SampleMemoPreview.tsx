@@ -13,7 +13,7 @@ const SAMPLE_ROWS: { label: string; value: string; source: FieldSource }[] = [
   },
   {
     label: "Defensibility",
-    value: "Data moat is thin — a competitor could replicate the core flow in ~2 months",
+    value: "Data moat is thin - a competitor could replicate the core flow in ~2 months",
     source: "inferred",
   },
 ];

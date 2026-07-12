@@ -3,7 +3,7 @@ const GROUPS: { label: string; chip: string; items: string[] }[] = [
     label: "Strengths",
     chip: "bg-accent/15 text-accent",
     items: [
-      "Sharp, specific problem — you name the customer and the pain in one line.",
+      "Sharp, specific problem: you name the customer and the pain in one line.",
       "Traction slide leads with real revenue, not vanity metrics.",
     ],
   },
@@ -11,7 +11,7 @@ const GROUPS: { label: string; chip: string; items: string[] }[] = [
     label: "What's missing",
     chip: "bg-amber-500/20 text-amber-700",
     items: [
-      "No competitive landscape — an investor will assume you haven't looked.",
+      "No competitive landscape: an investor will assume you haven't looked.",
       "Round size, terms, and cap table aren't stated.",
       "Go-to-market is a claim, not a plan.",
     ],
@@ -21,7 +21,7 @@ const GROUPS: { label: string; chip: string; items: string[] }[] = [
     chip: "bg-blue-500/15 text-blue-700",
     items: [
       "Both founders are easy to find on LinkedIn with relevant backgrounds.",
-      "But the company has almost no web footprint and no press — expect investors to read the silence as early-stage risk.",
+      "But the company has almost no web footprint and no press; expect investors to read the silence as early-stage risk.",
     ],
   },
 ];

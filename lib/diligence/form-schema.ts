@@ -31,11 +31,11 @@ export const DD_SECTIONS: FormSection[] = [
     title: "Company Overview",
     fields: [
       { key: "company.name", label: "Company", kind: "text", hint: "The company / startup name." },
-      { key: "company.source", label: "Source", kind: "text", manualOnly: true, hint: "How the investor met the company (e.g. an event). Usually not in the deck — leave unknown if absent." },
+      { key: "company.source", label: "Source", kind: "text", manualOnly: true, hint: "How the investor met the company (e.g. an event). Usually not in the deck - leave unknown if absent." },
       { key: "company.founded", label: "Founded", kind: "text", hint: "Founding date (month + year if known)." },
       { key: "company.basedIn", label: "Based in", kind: "text", hint: "Headquarters location (city/country)." },
-      { key: "company.description", label: "Description", kind: "text", hint: "1–3 sentence description of what the company does." },
-      { key: "company.personalNote", label: "Personal note", kind: "text", manualOnly: true, hint: "The investor's subjective impression from meeting the team. Not derivable from a deck — leave unknown." },
+      { key: "company.description", label: "Description", kind: "text", hint: "1-3 sentence description of what the company does." },
+      { key: "company.personalNote", label: "Personal note", kind: "text", manualOnly: true, hint: "The investor's subjective impression from meeting the team. Not derivable from a deck - leave unknown." },
     ],
   },
   {
@@ -80,12 +80,12 @@ export const DD_SECTIONS: FormSection[] = [
   {
     title: "Scorecard",
     fields: [
-      { key: "scorecard.team", label: "Team", kind: "rating", hint: "Rate the team 1–5 (strength, completeness, track record)." },
-      { key: "scorecard.technology", label: "Technology", kind: "rating", hint: "Rate product/tech maturity 1–5 (1 = prototype/MVP/undeveloped, 5 = market-ready)." },
-      { key: "scorecard.marketSize", label: "Market Size", kind: "rating", hint: "Rate the market size 1–5." },
-      { key: "scorecard.valueProposition", label: "Value Proposition", kind: "rating", hint: "Rate the value proposition 1–5." },
-      { key: "scorecard.competitiveAdvantage", label: "Competitive Advantage", kind: "rating", hint: "Rate the competitive advantage / moat 1–5." },
-      { key: "scorecard.socialImpact", label: "Social Impact", kind: "rating", hint: "Rate the social impact 1–5." },
+      { key: "scorecard.team", label: "Team", kind: "rating", hint: "Rate the team 1-5 (strength, completeness, track record)." },
+      { key: "scorecard.technology", label: "Technology", kind: "rating", hint: "Rate product/tech maturity 1-5 (1 = prototype/MVP/undeveloped, 5 = market-ready)." },
+      { key: "scorecard.marketSize", label: "Market Size", kind: "rating", hint: "Rate the market size 1-5." },
+      { key: "scorecard.valueProposition", label: "Value Proposition", kind: "rating", hint: "Rate the value proposition 1-5." },
+      { key: "scorecard.competitiveAdvantage", label: "Competitive Advantage", kind: "rating", hint: "Rate the competitive advantage / moat 1-5." },
+      { key: "scorecard.socialImpact", label: "Social Impact", kind: "rating", hint: "Rate the social impact 1-5." },
       { key: "scorecard.funding", label: "Funding raised", kind: "number", hint: "Total funding the startup has ALREADY raised to date (not the current ask), as an integer in the deck's currency (no symbols)." },
     ],
   },

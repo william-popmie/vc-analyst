@@ -24,7 +24,7 @@ function Stars({ value, active }: { value: number; active: boolean }) {
     return active ? (
       <span className="inline-block h-3 w-20 animate-pulse rounded bg-ink/10" />
     ) : (
-      <span className="text-ink/30">—</span>
+      <span className="text-ink/30">-</span>
     );
   }
   return (
@@ -75,7 +75,7 @@ export default function ScorecardPanel({
           ) : active ? (
             <span className="inline-block h-3 w-20 animate-pulse rounded bg-ink/10" />
           ) : (
-            <span className="text-ink/30">—</span>
+            <span className="text-ink/30">-</span>
           )}
         </div>
       </div>

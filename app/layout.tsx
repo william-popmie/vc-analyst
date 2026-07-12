@@ -15,7 +15,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "AI VC Analyst — 800+ decks, distilled",
+  title: "AI VC Analyst - 800+ decks, distilled",
   description: "Top 6 of 250. 800 pitch decks reviewed. Everything I learned, distilled into an AI.",
 };
 

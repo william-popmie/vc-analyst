@@ -16,7 +16,7 @@ export default function Home() {
             The feedback a VC would never send you.
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-lg leading-relaxed text-muted">
-            A partner forms a sharp opinion of your deck in minutes — then sends a two-line
+            A partner forms a sharp opinion of your deck in minutes, then sends a two-line
             pass, if that. This is the part they keep to themselves: what&apos;s landing,
             what&apos;s missing, and how you look to someone who Googles you before they reply.
           </p>
@@ -30,7 +30,7 @@ export default function Home() {
             Not a summary. Due diligence.
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-lg leading-relaxed text-muted">
-            I&apos;m not summarizing your startup — you already know your startup. I&apos;m
+            I&apos;m not summarizing your startup; you already know your startup. I&apos;m
             showing you <span className="marker">the part you never get to see</span>: what a
             VC quietly checks, what they don&apos;t buy, and the call they&apos;d make before
             you&apos;re ever in the room.
@@ -51,7 +51,7 @@ export default function Home() {
                 The exact criteria you&apos;re being judged against
               </p>
               <p className="mt-2 max-w-md leading-relaxed text-muted">
-                Real insider criteria — team credibility, competition, deck quality — from a year
+                Real insider criteria (team credibility, competition, deck quality) from a year
                 inside one of the world&apos;s most active accelerators.
               </p>
             </div>
