@@ -36,7 +36,10 @@ export function cleanDashes(text: string): string {
     .replace(/(\d)\s*[\u2013\u2014]\s*(\d)/g, "$1-$2")
     .replace(/\s*[\u2013\u2014]\s*/g, " - ")
     .replace(/\s*--\s*/g, " - ")
-    .replace(/ {2,}/g, " ");
+    .replace(/;/g, ",")
+    .replace(/ {2,}/g, " ")
+    .replace(/ ,/g, ",")
+    .replace(/, ,/g, ",");
 }
 
 function str(v: unknown): string {
