@@ -92,22 +92,6 @@ function usageOf(usage: Anthropic.Usage, model: string): TokenUsage {
   };
 }
 
-/** Log cache read/write/fresh token counts so caching can be verified in dev. */
-function logCacheUsage(label: string, usage: Anthropic.Usage): void {
-  console.log(
-    `[claude:${label}] input=${usage.input_tokens} cache_read=${usage.cache_read_input_tokens ?? 0} cache_write=${usage.cache_creation_input_tokens ?? 0} output=${usage.output_tokens}`,
-  );
-}
-
-/**
- * Log the instant a call is sent, before awaiting anything. Without this, a
- * hung request produces zero output — logCacheUsage only fires on success, so
- * there'd be no way to tell "never sent" from "stuck waiting" from the logs.
- */
-function logDispatch(label: string): void {
-  console.log(`[claude:${label}] dispatching…`);
-}
-
 /** Anthropic Claude adapter — translates the generic capabilities to the SDK. */
 export const claudeProvider: LlmProvider = {
   name: "claude",
