@@ -34,3 +34,14 @@ export function costOf(usage: TokenUsage): number {
 
   return tokenCost + (usage.webSearches ?? 0) * WEB_SEARCH_COST;
 }
+
+/**
+ * $ saved by reading `cacheReadTokens` from cache instead of paying the full
+ * input rate for them. Zero for unknown models or when nothing was cached.
+ */
+export function cacheSavingsOf(usage: TokenUsage): number {
+  const rate = PER_MILLION[usage.model];
+  if (!rate) return 0;
+
+  return (usage.cacheReadTokens * (rate.input - rate.cacheRead)) / 1_000_000;
+}

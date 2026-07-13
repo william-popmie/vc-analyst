@@ -26,6 +26,16 @@ function client(): Anthropic {
   return new Anthropic({ apiKey: getAnthropicApiKey() });
 }
 
+/**
+ * Mark the system prompt as a cache breakpoint. The playbook-derived system
+ * prompts are large and stable across calls/stages, so caching them turns
+ * repeat reads (research continuations, later pipeline stages within the
+ * 5-min window) into cheap cache hits instead of full-price input tokens.
+ */
+function cachedSystem(system: string): Anthropic.TextBlockParam[] {
+  return [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
+}
+
 /** Join the text blocks of a message into one trimmed string. */
 function textOf(content: Anthropic.ContentBlock[]): string {
   return content
@@ -85,7 +95,7 @@ export const claudeProvider: LlmProvider = {
     const params = {
       model: MODEL_ID,
       max_tokens: RESEARCH_MAX_TOKENS,
-      system,
+      system: cachedSystem(system),
       tools: [webSearchTool],
       output_config: { effort: "medium" as const },
     };
@@ -140,7 +150,7 @@ export const claudeProvider: LlmProvider = {
     const stream = client().messages.stream({
       model: MODEL_ID,
       max_tokens: WRITE_MAX_TOKENS,
-      system,
+      system: cachedSystem(system),
       messages: [{ role: "user", content: user }],
     });
     if (onText) stream.on("text", (delta: string) => onText(delta));

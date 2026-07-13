@@ -1,5 +1,6 @@
 import { emptyForm } from "@/lib/diligence/form-schema";
 import { applyField } from "@/lib/diligence/parse";
+import { cacheSavingsOf } from "@/lib/llm/pricing";
 import type {
   DeckFeedbackItem,
   DiligencePhase,
@@ -23,12 +24,30 @@ export interface Step {
   status: StepStatus;
 }
 
+/** Per-stage running token/cost detail, keyed by `ProgressEvent["stage"]`. */
+export interface StageUsage {
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  webSearches: number;
+  costUsd: number;
+  savingsUsd: number;
+  model: string;
+}
+
 /** Dev-only running token/cost total — never populated in production. */
 export interface UsageTotals {
   totalCostUsd: number;
+  totalSavingsUsd: number;
   totalInputTokens: number;
   totalOutputTokens: number;
-  byStage: Record<string, number>;
+  totalCacheReadTokens: number;
+  totalCacheCreationTokens: number;
+  totalWebSearches: number;
+  totalCalls: number;
+  byStage: Record<string, StageUsage>;
 }
 
 export interface AnalysisState {
@@ -129,16 +148,57 @@ export function streamReducer(state: AnalysisState, action: StreamAction): Analy
       return { ...state, deckFeedback: [...state.deckFeedback, event.item] };
 
     case "usage": {
-      const prev = state.usage ?? { totalCostUsd: 0, totalInputTokens: 0, totalOutputTokens: 0, byStage: {} };
+      const prev: UsageTotals = state.usage ?? {
+        totalCostUsd: 0,
+        totalSavingsUsd: 0,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        totalCacheReadTokens: 0,
+        totalCacheCreationTokens: 0,
+        totalWebSearches: 0,
+        totalCalls: 0,
+        byStage: {},
+      };
+      const { usage } = event;
+      const savingsUsd = cacheSavingsOf(usage);
+      const webSearches = usage.webSearches ?? 0;
+
+      const prevStage: StageUsage = prev.byStage[event.stage] ?? {
+        calls: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheCreationTokens: 0,
+        webSearches: 0,
+        costUsd: 0,
+        savingsUsd: 0,
+        model: usage.model,
+      };
+
       return {
         ...state,
         usage: {
           totalCostUsd: prev.totalCostUsd + event.costUsd,
-          totalInputTokens: prev.totalInputTokens + event.usage.inputTokens,
-          totalOutputTokens: prev.totalOutputTokens + event.usage.outputTokens,
+          totalSavingsUsd: prev.totalSavingsUsd + savingsUsd,
+          totalInputTokens: prev.totalInputTokens + usage.inputTokens,
+          totalOutputTokens: prev.totalOutputTokens + usage.outputTokens,
+          totalCacheReadTokens: prev.totalCacheReadTokens + usage.cacheReadTokens,
+          totalCacheCreationTokens: prev.totalCacheCreationTokens + usage.cacheCreationTokens,
+          totalWebSearches: prev.totalWebSearches + webSearches,
+          totalCalls: prev.totalCalls + 1,
           byStage: {
             ...prev.byStage,
-            [event.stage]: (prev.byStage[event.stage] ?? 0) + event.costUsd,
+            [event.stage]: {
+              calls: prevStage.calls + 1,
+              inputTokens: prevStage.inputTokens + usage.inputTokens,
+              outputTokens: prevStage.outputTokens + usage.outputTokens,
+              cacheReadTokens: prevStage.cacheReadTokens + usage.cacheReadTokens,
+              cacheCreationTokens: prevStage.cacheCreationTokens + usage.cacheCreationTokens,
+              webSearches: prevStage.webSearches + webSearches,
+              costUsd: prevStage.costUsd + event.costUsd,
+              savingsUsd: prevStage.savingsUsd + savingsUsd,
+              model: usage.model,
+            },
           },
         },
       };

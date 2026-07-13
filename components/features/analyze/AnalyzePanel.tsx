@@ -4,7 +4,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import Dropzone from "@/components/ui/Dropzone";
 import PhaseStepper from "@/components/features/analyze/PhaseStepper";
 import ReportView from "@/components/features/analyze/ReportView";
-import DevCostOverlay from "@/components/features/analyze/DevCostOverlay";
+import DevCostSidebar from "@/components/features/analyze/DevCostSidebar";
 import { initialState, streamReducer } from "@/components/features/analyze/streamState";
 import { readProgressStream } from "@/lib/diligence/stream";
 
@@ -133,7 +133,7 @@ export default function AnalyzePanel() {
             <ReportView state={stream} active={loading} scrollRef={scrollRef} />
           </div>
 
-          <DevCostOverlay usage={stream.usage} />
+          <DevCostSidebar usage={stream.usage} />
         </div>
       )}
     </>
