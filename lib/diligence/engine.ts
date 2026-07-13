@@ -45,6 +45,7 @@ class PipelineDiligenceEngine implements DiligenceEngine {
       provider,
       system: buildDeckExtractSystemPrompt(input.playbook, input.deckText),
       user: buildDeckExtractUserPrompt(),
+      tier: "economy", // deck reading is structured extraction — Haiku handles it cheaply
       form,
       emit,
       stage: "extract",

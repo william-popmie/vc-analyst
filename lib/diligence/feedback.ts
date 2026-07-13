@@ -73,6 +73,7 @@ export async function reviewDeck({
   await getProvider(provider).generateStream({
     system: buildDeckFeedbackSystemPrompt(playbook, deckText),
     user: buildDeckFeedbackUserPrompt(research),
+    tier: "economy", // deck critique against a checklist — Haiku is sufficient
     onText: (delta) => {
       buffer += delta;
       let newline: number;

@@ -19,6 +19,14 @@ export interface SystemBlock {
 /** A system prompt: a plain string, or ordered blocks where some are cacheable. */
 export type SystemPrompt = string | SystemBlock[];
 
+/**
+ * Which model class to run a generation on. "standard" = the provider's main
+ * model (Claude Sonnet); "economy" = its cheaper model (Claude Haiku) for
+ * stages where full judgment isn't needed. Each adapter maps this to a
+ * concrete model id, keeping the pipeline provider-agnostic.
+ */
+export type ModelTier = "standard" | "economy";
+
 /** A web page consulted during research. */
 export interface WebSource {
   title: string;
@@ -62,6 +70,8 @@ export interface ResearchOutput {
 export interface GenerateArgs {
   system: SystemPrompt;
   user: string;
+  /** Model class to run on; defaults to "standard". */
+  tier?: ModelTier;
   /** Called with each incremental chunk of the generated text. */
   onText?: (delta: string) => void;
   /** Called once with this call's token usage. */

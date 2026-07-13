@@ -1,6 +1,6 @@
 import { getProvider } from "@/lib/llm";
 import type { Provider } from "@/lib/llm";
-import type { SystemPrompt } from "@/lib/llm/types";
+import type { ModelTier, SystemPrompt } from "@/lib/llm/types";
 import { costOf } from "@/lib/llm/pricing";
 import { applyField, parseFieldLine } from "./parse";
 import type { DueDiligenceForm, ProgressCallback } from "./types";
@@ -9,6 +9,8 @@ interface FillArgs {
   provider: Provider;
   system: SystemPrompt;
   user: string;
+  /** Model class to run on; defaults to "standard". */
+  tier?: ModelTier;
   /** The form to mutate as fields arrive. */
   form: DueDiligenceForm;
   emit: ProgressCallback;
@@ -22,7 +24,7 @@ interface FillArgs {
  * `field` event — so the UI fills cells in real time. Used by both the
  * deck-extract pass and the completion pass.
  */
-export async function fillFields({ provider, system, user, form, emit, stage }: FillArgs): Promise<void> {
+export async function fillFields({ provider, system, user, tier, form, emit, stage }: FillArgs): Promise<void> {
   let buffer = "";
 
   const handleLine = (line: string) => {
@@ -36,6 +38,7 @@ export async function fillFields({ provider, system, user, form, emit, stage }: 
   await getProvider(provider).generateStream({
     system,
     user,
+    tier,
     onText: (delta) => {
       buffer += delta;
       let newline: number;

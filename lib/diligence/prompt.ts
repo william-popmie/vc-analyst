@@ -83,20 +83,20 @@ export function buildDeckExtractUserPrompt(): string {
   return `Emit the deck-derived fields as NDJSON now. Go through the field list once, in order, emitting a line only for fields the deck covers, then stop.`;
 }
 
-// ───────────────────────── Pass 2a: web search ─────────────────────────
+// ───────────────────────── Pass 2: web research ─────────────────────────
 
 export function buildSearchSystemPrompt(playbook: string, deckText: string): SystemPrompt {
   return withDeckContext(
     playbook,
     deckText,
-    `You will be given a startup's name plus a list of FACTS STILL MISSING after reading the deck (above). Research the company on the web to support a due-diligence form.
+    `You will be given a startup's name plus a list of FACTS STILL MISSING after reading the deck (above). Research the company on the web and write up organized research notes to support a due-diligence form.
 
 Your #1 job is to find the missing facts in that list - most are one or two web searches away (a founding year, an HQ city, the founders' names and prior roles). Run a separate, specific search for each missing fact. Also verify the founders (LinkedIn/prior companies/exits - note if they genuinely can't be found, which is itself a signal), map the real competitive landscape, validate the market size and "why now", and find traction/funding signals. Findings can confirm OR contradict the deck - capture both.
 
-BUDGET - STOP EARLY: you have at most 8 searches total, and diminishing returns set in fast. As soon as you've made one solid attempt at each missing fact plus a quick founders/competition check (typically 4-6 searches), STOP SEARCHING and write up what you found - do NOT keep searching to fill the budget, do NOT re-search a fact you already tried and failed to confirm, and do NOT chase tangential leads (unrelated companies/people with similar names) past a second search. "Could not find X" is a complete, acceptable answer.
+BUDGET - STOP EARLY: you have at most 5 searches total, and diminishing returns set in fast. As soon as you've made one solid attempt at each missing fact plus a quick founders/competition check, STOP SEARCHING and write up what you found - do NOT keep searching to fill the budget, do NOT re-search a fact you already tried and failed to confirm, and do NOT chase tangential leads (unrelated companies/people with similar names) past a second search. "Could not find X" is a complete, acceptable answer.
 
 ## Output
-Collect concise, source-attributed facts - short bullet points, NOT prose synthesis (a later step writes the narrative). For EACH missing fact you were asked to find, state it explicitly and plainly with its source (e.g. "Founded: 2008 (Crunchbase)", "Based in: San Francisco, CA (company site)", "Co-founder: Brian Chesky - RISD, ex-... (LinkedIn)"). If after searching you truly can't find one, say so explicitly. Keep it factual and terse - no framing, no themes, no conclusions.`,
+Write concise research notes in plain prose (NOT JSON), grouped by theme (founders, founded/location, problem, solution, market, competition, traction, funding). Under each theme, state each fact you found explicitly and plainly with its source (e.g. "Founded: 2008 (Crunchbase)", "Based in: San Francisco, CA (company site)", "Co-founder: Brian Chesky - RISD, ex-... (LinkedIn)"). For EACH missing fact you were asked to find, either state it or say plainly you couldn't find it. Keep it factual and dense - no preamble, no conclusions, no recommendations. These notes are read directly by the next stages, so make every fact easy to extract.`,
   );
 }
 
@@ -109,31 +109,7 @@ export function buildSearchUserPrompt(companyName: string, gaps: string[]): stri
 
 ${gapBlock}
 
-Research the company on the web - prioritizing the missing facts above - then output your raw sourced facts.`;
-}
-
-// ───────────────────────── Pass 2b: analyze the raw findings ─────────────────────────
-
-export function buildAnalyzeSystemPrompt(playbook: string, deckText: string): SystemPrompt {
-  return withDeckContext(
-    playbook,
-    deckText,
-    `You are given raw, source-attributed facts gathered from web research about the company (the deck is above; the raw facts are in the user message below). Synthesize them into clear research notes for the due-diligence write-up.
-
-## Output
-Write thorough research notes in plain prose (NOT JSON), grouped by theme (founders, founded/location, problem, solution, market, competition, traction, funding). For EACH fact from the raw findings, state it explicitly and plainly (e.g. "Founded: 2008", "Based in: San Francisco, CA", "Co-founder: Brian Chesky - RISD, ex-..."). Findings can confirm OR contradict the deck - capture both. If a search truly found nothing for a fact, say so explicitly.`,
-  );
-}
-
-export function buildAnalyzeUserPrompt(rawFindings: string, sources: { title: string; url: string }[]): string {
-  const sourceList = sources.map((s) => `- ${s.title}: ${s.url}`).join("\n") || "(none)";
-  return `## Raw research facts gathered
-${rawFindings || "(no external findings were gathered)"}
-
-## Sources consulted
-${sourceList}
-
-Now write the synthesized research notes.`;
+Research the company on the web - prioritizing the missing facts above - then output your organized research notes.`;
 }
 
 // ───────────────────────── Pass 3: complete the form ─────────────────────────

@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { MODEL_ID, OCR_MODEL_ID, getAnthropicApiKey } from "@/lib/config";
+import { HAIKU_MODEL_ID, MODEL_ID, OCR_MODEL_ID, getAnthropicApiKey } from "@/lib/config";
 import type {
   GenerateArgs,
   LlmProvider,
@@ -12,8 +12,8 @@ import type {
 
 // All Anthropic-specific knobs live here and nowhere else.
 const MAX_CONTINUATIONS = 6; // safety cap for the server-side web-search loop
-const MAX_SEARCHES = 8; // research breadth — enough to chase each missing fact
-const RESEARCH_MAX_TOKENS = 8000;
+const MAX_SEARCHES = 5; // research breadth — enough to chase each missing fact without runaway cost
+const RESEARCH_MAX_TOKENS = 5000;
 const WRITE_MAX_TOKENS = 16000;
 const OCR_MAX_TOKENS = 16000;
 
@@ -105,7 +105,7 @@ export const claudeProvider: LlmProvider = {
       max_tokens: RESEARCH_MAX_TOKENS,
       system: toSystem(system),
       tools: [webSearchTool],
-      output_config: { effort: "medium" as const },
+      output_config: { effort: "low" as const },
     };
 
     const sources: WebSource[] = [];
@@ -153,17 +153,19 @@ export const claudeProvider: LlmProvider = {
     return { findings: textOf(response.content), sources };
   },
 
-  async generateStream({ system, user, onText, onUsage }) {
+  async generateStream({ system, user, tier, onText, onUsage }) {
     // No tools — stream plain text (the pipeline parses NDJSON field lines).
+    // "economy" stages run on the cheaper Haiku model.
+    const model = tier === "economy" ? HAIKU_MODEL_ID : MODEL_ID;
     const stream = client().messages.stream({
-      model: MODEL_ID,
+      model,
       max_tokens: WRITE_MAX_TOKENS,
       system: toSystem(system),
       messages: [{ role: "user", content: user }],
     });
     if (onText) stream.on("text", (delta: string) => onText(delta));
     const message = await stream.finalMessage();
-    onUsage?.(usageOf(message.usage, MODEL_ID));
+    onUsage?.(usageOf(message.usage, model));
     return textOf(message.content);
   },
 };

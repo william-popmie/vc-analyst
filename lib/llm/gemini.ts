@@ -113,6 +113,7 @@ export const geminiProvider: LlmProvider = {
   },
 
   async generateStream({ system, user, onText, onUsage }) {
+    // `tier` is ignored here — Gemini stages already use the cheap Flash model.
     // No tools — stream plain text (the pipeline parses NDJSON field lines). We
     // deliberately don't set responseMimeType json: the output is many JSON
     // lines, not one object.
