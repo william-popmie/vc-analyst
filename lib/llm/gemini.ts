@@ -5,6 +5,7 @@ import type {
   LlmProvider,
   ResearchArgs,
   ResearchOutput,
+  SystemPrompt,
   TokenUsage,
   WebSource,
 } from "./types";
@@ -21,6 +22,16 @@ const GENERATE_MAX_TOKENS = 16000;
 
 function ai(): GoogleGenAI {
   return new GoogleGenAI({ apiKey: getGeminiApiKey() });
+}
+
+/**
+ * Gemini's `systemInstruction` takes a plain string; join `SystemPrompt`
+ * blocks in order (there's no explicit-cache API wired up here, so the
+ * `cache` marker is a no-op on this provider — Gemini's implicit caching
+ * still applies to the identical leading portion of the joined string).
+ */
+function toSystemInstruction(system: SystemPrompt): string {
+  return typeof system === "string" ? system : system.map((b) => b.text).join("\n\n");
 }
 
 /** Normalize a Gemini `usageMetadata` object to the provider-agnostic shape. */
@@ -58,7 +69,7 @@ export const geminiProvider: LlmProvider = {
       model: GEMINI_MODEL_ID,
       contents: user,
       // Google Search grounding — the equivalent of Claude's web_search.
-      config: { systemInstruction: system, tools: [{ googleSearch: {} }] },
+      config: { systemInstruction: toSystemInstruction(system), tools: [{ googleSearch: {} }] },
     });
 
     const sources: WebSource[] = [];
@@ -109,7 +120,7 @@ export const geminiProvider: LlmProvider = {
       model: GEMINI_MODEL_ID,
       contents: user,
       config: {
-        systemInstruction: system,
+        systemInstruction: toSystemInstruction(system),
         maxOutputTokens: GENERATE_MAX_TOKENS,
         thinkingConfig: { thinkingBudget: 0 },
       },

@@ -1,12 +1,13 @@
 import { getProvider } from "@/lib/llm";
 import type { Provider } from "@/lib/llm";
+import type { SystemPrompt } from "@/lib/llm/types";
 import { costOf } from "@/lib/llm/pricing";
 import { applyField, parseFieldLine } from "./parse";
 import type { DueDiligenceForm, ProgressCallback } from "./types";
 
 interface FillArgs {
   provider: Provider;
-  system: string;
+  system: SystemPrompt;
   user: string;
   /** The form to mutate as fields arrive. */
   form: DueDiligenceForm;

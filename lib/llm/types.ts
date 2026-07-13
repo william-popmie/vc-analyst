@@ -6,6 +6,19 @@
 
 export type Provider = "gemini" | "claude";
 
+/**
+ * One block of a system prompt. `cache: true` marks it as a stable, reusable
+ * prefix the provider should cache (Anthropic: an ephemeral cache
+ * breakpoint). Blocks are joined in order; only the marked ones are cached.
+ */
+export interface SystemBlock {
+  text: string;
+  cache?: boolean;
+}
+
+/** A system prompt: a plain string, or ordered blocks where some are cacheable. */
+export type SystemPrompt = string | SystemBlock[];
+
 /** A web page consulted during research. */
 export interface WebSource {
   title: string;
@@ -26,7 +39,7 @@ export interface TokenUsage {
 
 export interface ResearchArgs {
   /** System / instruction prompt. */
-  system: string;
+  system: SystemPrompt;
   /** User prompt (the deck text + task). */
   user: string;
   /** Called with each search query as it happens. */
@@ -47,7 +60,7 @@ export interface ResearchOutput {
 }
 
 export interface GenerateArgs {
-  system: string;
+  system: SystemPrompt;
   user: string;
   /** Called with each incremental chunk of the generated text. */
   onText?: (delta: string) => void;
