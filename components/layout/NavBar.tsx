@@ -20,22 +20,22 @@ export default function NavBar() {
   const doneCount = stream.steps.filter((s) => s.status === "done").length;
 
   return (
-    <nav className="px-6 py-5">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
+    <nav className="px-4 py-5 sm:px-6">
+      <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 sm:gap-4">
         <Link href="/" className="group flex shrink-0 items-center gap-2">
           <Image src="/logo.png" alt="VC Analyst" width={32} height={32} className="rounded-md" priority />
-          <span className="font-semibold tracking-tight text-ink transition-opacity group-hover:opacity-60">
+          <span className="hidden font-semibold tracking-tight text-ink transition-opacity group-hover:opacity-60 sm:inline">
             VC Analyst
           </span>
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           {loading && currentId && (
             <Link
               href={`/due-diligence/${currentId}`}
-              className="flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3.5 py-1.5 text-sm font-medium text-accent shadow-[0_0_14px_-2px_var(--accent-bright)] transition-colors hover:bg-accent/15"
+              className="flex shrink-0 items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1.5 text-sm font-medium text-accent shadow-[0_0_14px_-2px_var(--accent-bright)] transition-colors hover:bg-accent/15 sm:px-3.5"
             >
-              <span className="relative flex h-2 w-2">
+              <span className="relative flex h-2 w-2 shrink-0">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-bright opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-accent-bright" />
               </span>
