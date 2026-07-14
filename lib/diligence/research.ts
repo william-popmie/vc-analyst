@@ -29,6 +29,7 @@ export async function research(
   { deckText, playbook }: DiligenceInput,
   onEvent?: ProgressCallback,
   ctx?: ResearchContext,
+  signal?: AbortSignal,
 ): Promise<ResearchResult> {
   const emit: ProgressCallback = onEvent ?? (() => {});
 
@@ -39,6 +40,7 @@ export async function research(
     onSource: (source) => emit({ type: "source", ...source }),
     onText: (text) => emit({ type: "note", text }),
     onUsage: (usage) => emit({ type: "usage", stage: "search", usage, costUsd: costOf(usage) }),
+    signal,
   });
 
   return { findings: result.findings, sources: result.sources };

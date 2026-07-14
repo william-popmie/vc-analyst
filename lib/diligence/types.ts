@@ -173,7 +173,7 @@ export type ProgressCallback = (event: ProgressEvent) => void;
  * API route or the UI, which depend only on `DueDiligenceForm` + `ProgressEvent`.
  */
 export interface DiligenceEngine {
-  run(input: DiligenceInput, onEvent?: ProgressCallback): Promise<DueDiligenceForm>;
+  run(input: DiligenceInput, onEvent?: ProgressCallback, signal?: AbortSignal): Promise<DueDiligenceForm>;
 }
 
 /** Thrown when a deck has too little extractable text (e.g. image-only PDF). */

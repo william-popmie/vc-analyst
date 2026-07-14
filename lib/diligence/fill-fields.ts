@@ -16,6 +16,8 @@ interface FillArgs {
   emit: ProgressCallback;
   /** Label for usage events — distinguishes the extract pass from the complete pass. */
   stage: string;
+  /** Aborts the underlying request — cancel/disconnect stops token burn. */
+  signal?: AbortSignal;
 }
 
 /**
@@ -24,7 +26,7 @@ interface FillArgs {
  * `field` event — so the UI fills cells in real time. Used by both the
  * deck-extract pass and the completion pass.
  */
-export async function fillFields({ provider, system, user, tier, form, emit, stage }: FillArgs): Promise<void> {
+export async function fillFields({ provider, system, user, tier, form, emit, stage, signal }: FillArgs): Promise<void> {
   let buffer = "";
 
   const handleLine = (line: string) => {
@@ -49,6 +51,7 @@ export async function fillFields({ provider, system, user, tier, form, emit, sta
       }
     },
     onUsage: (usage) => emit({ type: "usage", stage, usage, costUsd: costOf(usage) }),
+    signal,
   });
 
   // Flush any trailing line without a terminating newline.

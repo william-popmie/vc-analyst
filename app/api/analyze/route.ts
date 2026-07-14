@@ -79,10 +79,14 @@ export async function POST(req: Request) {
         );
         const playbook = loadPlaybook();
 
-        const report = await getDiligenceEngine().run({ deckText, playbook }, send);
+        const report = await getDiligenceEngine().run({ deckText, playbook }, send, req.signal);
         send({ type: "report", report });
       } catch (err) {
-        if (err instanceof EmptyDeckError) {
+        if (req.signal.aborted) {
+          // Explicit stop or client disconnect — the pipeline already stopped
+          // mid-stage; nothing more to report.
+          console.log("[analyze] ⏹ aborted");
+        } else if (err instanceof EmptyDeckError) {
           send({ type: "error", message: err.message });
         } else if (err instanceof Error && /API_?KEY is not set/i.test(err.message)) {
           // Surface the engine's own message ("GEMINI_API_KEY is not set…" /

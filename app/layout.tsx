@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
-import Image from "next/image";
-import Link from "next/link";
 import Footer from "@/components/layout/Footer";
+import NavBar from "@/components/layout/NavBar";
+import AnalysisProvider from "@/components/features/analyze/AnalysisProvider";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -31,26 +31,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="orb orb-2" style={{ width: 480, height: 480, top: 200, right: -120, background: "radial-gradient(circle at 70% 30%, #ece0b8, transparent 70%)" }} />
         <div className="orb orb-1" style={{ width: 360, height: 360, bottom: -120, left: "30%", background: "radial-gradient(circle at 50% 50%, #d9eafc, transparent 70%)" }} />
 
-        <div className="relative z-10">
-          <nav className="px-6 py-5">
-            <div className="max-w-3xl mx-auto flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-2 group">
-                <Image src="/logo.png" alt="VC Analyst" width={32} height={32} className="rounded-md" priority />
-                <span className="font-semibold tracking-tight text-ink group-hover:opacity-60 transition-opacity">
-                  VC Analyst
-                </span>
-              </Link>
-              <Link
-                href="/playbook"
-                className="text-sm font-medium text-muted hover:text-ink transition-colors"
-              >
-                The Playbook →
-              </Link>
-            </div>
-          </nav>
-          <main className="max-w-3xl mx-auto px-6 pb-24">{children}</main>
-          <Footer />
-        </div>
+        <AnalysisProvider>
+          <div className="relative z-10">
+            <NavBar />
+            {/* Pages set their own max-width — the report page needs to run wider than the rest. */}
+            <main className="pb-24">{children}</main>
+            <Footer />
+          </div>
+        </AnalysisProvider>
       </body>
     </html>
   );

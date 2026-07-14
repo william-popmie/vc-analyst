@@ -33,6 +33,7 @@ class PipelineDiligenceEngine implements DiligenceEngine {
   async run(
     input: DiligenceInput,
     onEvent?: ProgressCallback,
+    signal?: AbortSignal,
   ): Promise<DueDiligenceForm> {
     const emit: ProgressCallback = onEvent ?? (() => {});
     const form = emptyForm();
@@ -49,15 +50,20 @@ class PipelineDiligenceEngine implements DiligenceEngine {
       form,
       emit,
       stage: "extract",
+      signal,
     });
+    signal?.throwIfAborted();
 
     // 2. Research the web, targeting the fields the deck left empty.
     emit({ type: "status", phase: "researching", message: "Researching online" });
-    const researchResult = await research(input, onEvent, {
-      companyName: form.company.name.value,
-      gaps: computeGaps(form),
-    });
+    const researchResult = await research(
+      input,
+      onEvent,
+      { companyName: form.company.name.value, gaps: computeGaps(form) },
+      signal,
+    );
     form.sources = researchResult.sources;
+    signal?.throwIfAborted();
 
     // 3. Complete the form with the findings.
     emit({ type: "status", phase: "completing", message: "Completing the form" });
@@ -68,7 +74,9 @@ class PipelineDiligenceEngine implements DiligenceEngine {
       form,
       emit,
       stage: "complete",
+      signal,
     });
+    signal?.throwIfAborted();
 
     // 4. Score the scorecard in its own dedicated pass — the sole input to the
     //    invest model, kept separate so it can't be truncated to empty.
@@ -79,7 +87,9 @@ class PipelineDiligenceEngine implements DiligenceEngine {
       playbook: input.playbook,
       form,
       emit,
+      signal,
     });
+    signal?.throwIfAborted();
 
     // 5. Critique the deck itself — gaps, weaknesses, and strengths, grounded
     //    in the playbook and research signals gathered above.
@@ -91,7 +101,9 @@ class PipelineDiligenceEngine implements DiligenceEngine {
       playbook: input.playbook,
       form,
       emit,
+      signal,
     });
+    signal?.throwIfAborted();
 
     // 6. Investment verdict from the custom ONNX model.
     emit({ type: "status", phase: "verdict", message: "Running the investment model" });

@@ -1,14 +1,14 @@
 import Link from "next/link";
 import Hero from "@/components/features/hero/Hero";
-import AnalyzePanel from "@/components/features/analyze/AnalyzePanel";
+import AnalysisWorkspace from "@/components/features/analyze/AnalysisWorkspace";
 import SampleMemoPreview from "@/components/features/landing/SampleMemoPreview";
 import FeedbackPreview from "@/components/features/landing/FeedbackPreview";
 
 export default function Home() {
   return (
-    <div className="space-y-20">
+    <div className="mx-auto max-w-3xl space-y-20 px-6">
       <Hero />
-      <AnalyzePanel />
+      <AnalysisWorkspace />
 
       <section className="fade-up">
         <div className="mb-6 text-center">
