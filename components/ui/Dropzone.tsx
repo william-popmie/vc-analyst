@@ -9,6 +9,11 @@ type DropzoneProps = {
   disabled?: boolean;
 };
 
+// Vercel's serverless functions cap request bodies at ~4.5MB regardless of
+// Next.js config, so we reject oversized files here instead of letting the
+// upload fail with an opaque 413 from the platform.
+const MAX_SIZE_MB = 4;
+
 /**
  * Generic file dropzone with a rounded SVG dashed border that hugs the
  * corners (a plain CSS dashed border can't follow border-radius cleanly).
@@ -20,12 +25,24 @@ export default function Dropzone({
   disabled = false,
 }: DropzoneProps) {
   const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   function pick(f: File | null | undefined) {
     if (disabled) return;
-    if (!f) return onFile(null);
-    if (accept && !f.type.match(accept.replace("*", ".*"))) return;
+    if (!f) {
+      setError("");
+      return onFile(null);
+    }
+    if (accept && !f.type.match(accept.replace("*", ".*"))) {
+      setError("Unsupported file type — upload a PDF.");
+      return;
+    }
+    if (f.size > MAX_SIZE_MB * 1024 * 1024) {
+      setError(`File exceeds size limit: max ${MAX_SIZE_MB}MB.`);
+      return;
+    }
+    setError("");
     onFile(f);
   }
 
@@ -36,13 +53,16 @@ export default function Dropzone({
       onDragLeave={() => setDragging(false)}
       onDrop={(e) => { e.preventDefault(); setDragging(false); pick(e.dataTransfer.files[0]); }}
     >
-      {/* Rounded dashed border overlay */}
-      <svg className="pointer-events-none absolute inset-0 h-full w-full" fill="none" aria-hidden>
+      {/* Rounded dashed border overlay. Inset via CSS on the <svg> (not a
+          calc() SVG attribute — some browsers, e.g. Safari, reject calc()
+          in presentation attributes) so the rect itself can use plain,
+          universally-valid percentage values. */}
+      <svg className="pointer-events-none absolute inset-[1.5px] h-[calc(100%-3px)] w-[calc(100%-3px)]" fill="none" aria-hidden>
         <rect
-          x="1.5"
-          y="1.5"
-          width="calc(100% - 3px)"
-          height="calc(100% - 3px)"
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
           rx="22"
           ry="22"
           stroke="currentColor"
@@ -75,7 +95,9 @@ export default function Dropzone({
           <div className="space-y-2">
             <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-ink/5 text-xl text-ink">↑</div>
             <p className="text-lg font-semibold text-ink">Drop your pitch deck</p>
-            <p className="text-sm text-muted">PDF · up to 20MB · click or drag</p>
+            <p className={`text-sm ${error ? "text-red-600" : "text-muted"}`}>
+              {error || `PDF · up to ${MAX_SIZE_MB}MB · click or drag`}
+            </p>
           </div>
         )}
       </button>
