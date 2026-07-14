@@ -42,10 +42,8 @@ function FeedbackCard({ item }: { item: DeckFeedbackItem }) {
 
 function Skeleton() {
   return (
-    <div className="space-y-2 px-5 pb-4">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="h-3 w-full max-w-sm animate-pulse rounded bg-ink/10" />
-      ))}
+    <div className="px-5 pb-4">
+      <div className="h-3 w-32 animate-pulse rounded bg-ink/10" />
     </div>
   );
 }
