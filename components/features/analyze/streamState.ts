@@ -106,10 +106,14 @@ function advanceSteps(steps: Step[], phase: DiligencePhase): Step[] {
   });
 }
 
-export type StreamAction = { type: "reset" } | { type: "event"; event: ProgressEvent };
+export type StreamAction =
+  | { type: "reset" }
+  | { type: "event"; event: ProgressEvent }
+  | { type: "hydrate"; state: AnalysisState };
 
 export function streamReducer(state: AnalysisState, action: StreamAction): AnalysisState {
   if (action.type === "reset") return initialState();
+  if (action.type === "hydrate") return action.state;
   const event = action.event;
 
   switch (event.type) {

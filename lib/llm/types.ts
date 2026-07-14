@@ -58,6 +58,8 @@ export interface ResearchArgs {
   onText?: (delta: string) => void;
   /** Called once per underlying API round-trip with that call's token usage. */
   onUsage?: (usage: TokenUsage) => void;
+  /** Aborts the underlying request(s) — cancel/disconnect stops token burn. */
+  signal?: AbortSignal;
 }
 
 export interface ResearchOutput {
@@ -76,6 +78,8 @@ export interface GenerateArgs {
   onText?: (delta: string) => void;
   /** Called once with this call's token usage. */
   onUsage?: (usage: TokenUsage) => void;
+  /** Aborts the underlying request — cancel/disconnect stops token burn. */
+  signal?: AbortSignal;
 }
 
 /**

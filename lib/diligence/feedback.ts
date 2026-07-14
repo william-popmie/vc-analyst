@@ -21,6 +21,8 @@ interface ReviewArgs {
   /** The form to append feedback items onto. */
   form: DueDiligenceForm;
   emit: ProgressCallback;
+  /** Aborts the underlying request — cancel/disconnect stops token burn. */
+  signal?: AbortSignal;
 }
 
 const VALID_SEVERITIES = new Set<DeckFeedbackSeverity>(["critical", "warning", "strength"]);
@@ -60,6 +62,7 @@ export async function reviewDeck({
   playbook,
   form,
   emit,
+  signal,
 }: ReviewArgs): Promise<void> {
   let buffer = "";
 
@@ -84,6 +87,7 @@ export async function reviewDeck({
       }
     },
     onUsage: (usage) => emit({ type: "usage", stage: "feedback", usage, costUsd: costOf(usage) }),
+    signal,
   });
 
   // Flush any trailing line without a terminating newline.

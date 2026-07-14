@@ -16,6 +16,7 @@
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-accent-bright: var(--accent-bright);
   --color-marker: var(--marker);
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-instrument-serif);

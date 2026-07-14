@@ -97,7 +97,7 @@ export const claudeProvider: LlmProvider = {
     return textOf(message.content);
   },
 
-  async researchWeb({ system, user, onSearch, onSource, onText, onUsage }): Promise<ResearchOutput> {
+  async researchWeb({ system, user, onSearch, onSource, onText, onUsage, signal }): Promise<ResearchOutput> {
     const c = client();
     const messages: Anthropic.MessageParam[] = [{ role: "user", content: user }];
     const params = {
@@ -134,7 +134,7 @@ export const claudeProvider: LlmProvider = {
       });
     };
 
-    let stream = c.messages.stream({ ...params, messages });
+    let stream = c.messages.stream({ ...params, messages }, { signal });
     attach(stream);
     let response = await stream.finalMessage();
     onUsage?.(usageOf(response.usage, MODEL_ID));
@@ -143,7 +143,7 @@ export const claudeProvider: LlmProvider = {
     let continuations = 0;
     while (response.stop_reason === "pause_turn" && continuations < MAX_CONTINUATIONS) {
       messages.push({ role: "assistant", content: response.content });
-      stream = c.messages.stream({ ...params, messages });
+      stream = c.messages.stream({ ...params, messages }, { signal });
       attach(stream);
       response = await stream.finalMessage();
       onUsage?.(usageOf(response.usage, MODEL_ID));
@@ -153,16 +153,19 @@ export const claudeProvider: LlmProvider = {
     return { findings: textOf(response.content), sources };
   },
 
-  async generateStream({ system, user, tier, onText, onUsage }) {
+  async generateStream({ system, user, tier, onText, onUsage, signal }) {
     // No tools — stream plain text (the pipeline parses NDJSON field lines).
     // "economy" stages run on the cheaper Haiku model.
     const model = tier === "economy" ? HAIKU_MODEL_ID : MODEL_ID;
-    const stream = client().messages.stream({
-      model,
-      max_tokens: WRITE_MAX_TOKENS,
-      system: toSystem(system),
-      messages: [{ role: "user", content: user }],
-    });
+    const stream = client().messages.stream(
+      {
+        model,
+        max_tokens: WRITE_MAX_TOKENS,
+        system: toSystem(system),
+        messages: [{ role: "user", content: user }],
+      },
+      { signal },
+    );
     if (onText) stream.on("text", (delta: string) => onText(delta));
     const message = await stream.finalMessage();
     onUsage?.(usageOf(message.usage, model));

@@ -64,12 +64,12 @@ export const geminiProvider: LlmProvider = {
     return (response.text ?? "").trim();
   },
 
-  async researchWeb({ system, user, onSearch, onSource, onText, onUsage }): Promise<ResearchOutput> {
+  async researchWeb({ system, user, onSearch, onSource, onText, onUsage, signal }): Promise<ResearchOutput> {
     const stream = await ai().models.generateContentStream({
       model: GEMINI_MODEL_ID,
       contents: user,
       // Google Search grounding — the equivalent of Claude's web_search.
-      config: { systemInstruction: toSystemInstruction(system), tools: [{ googleSearch: {} }] },
+      config: { systemInstruction: toSystemInstruction(system), tools: [{ googleSearch: {} }], abortSignal: signal },
     });
 
     const sources: WebSource[] = [];
@@ -112,7 +112,7 @@ export const geminiProvider: LlmProvider = {
     return { findings: findings.trim(), sources };
   },
 
-  async generateStream({ system, user, onText, onUsage }) {
+  async generateStream({ system, user, onText, onUsage, signal }) {
     // `tier` is ignored here — Gemini stages already use the cheap Flash model.
     // No tools — stream plain text (the pipeline parses NDJSON field lines). We
     // deliberately don't set responseMimeType json: the output is many JSON
@@ -124,6 +124,7 @@ export const geminiProvider: LlmProvider = {
         systemInstruction: toSystemInstruction(system),
         maxOutputTokens: GENERATE_MAX_TOKENS,
         thinkingConfig: { thinkingBudget: 0 },
+        abortSignal: signal,
       },
     });
     let text = "";

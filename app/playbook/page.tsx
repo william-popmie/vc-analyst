@@ -34,7 +34,7 @@ export default function PlaybookPage() {
   let sectionNo = 0;
 
   return (
-    <div className="space-y-10">
+    <div className="mx-auto max-w-3xl space-y-10 px-6">
       <header className="pt-10 sm:pt-14 space-y-5">
         <Link href="/" className="text-sm text-muted hover:text-ink transition-colors">← Back</Link>
         <div className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-paper/60 backdrop-blur px-3 py-1 text-xs font-medium text-accent uppercase tracking-[0.2em]">

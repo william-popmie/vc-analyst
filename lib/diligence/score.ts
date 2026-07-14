@@ -16,6 +16,8 @@ interface ScoreArgs {
   /** The form to write the scorecard onto. */
   form: DueDiligenceForm;
   emit: ProgressCallback;
+  /** Aborts the underlying request — cancel/disconnect stops token burn. */
+  signal?: AbortSignal;
 }
 
 const METRICS = [
@@ -54,11 +56,13 @@ export async function scoreCard({
   playbook,
   form,
   emit,
+  signal,
 }: ScoreArgs): Promise<void> {
   const text = await getProvider(provider).generateStream({
     system: buildScorecardSystemPrompt(playbook, deckText),
     user: buildScorecardUserPrompt(research),
     onUsage: (usage) => emit({ type: "usage", stage: "scorecard", usage, costUsd: costOf(usage) }),
+    signal,
   });
 
   const obj = extractObject(text);
