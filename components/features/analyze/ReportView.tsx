@@ -22,7 +22,7 @@ export default function ReportView({
   active: boolean;
   scrollRef: RefObject<HTMLElement | null>;
 }) {
-  const sections = REPORT_SECTIONS.filter((s) => s.available(state));
+  const sections = REPORT_SECTIONS.filter((s) => s.available(state, active));
 
   return (
     <div className="grid grid-cols-[24px_minmax(0,1fr)] gap-4 lg:grid-cols-[190px_minmax(0,1fr)] lg:gap-10">

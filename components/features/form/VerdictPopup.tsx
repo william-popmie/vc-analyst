@@ -10,9 +10,29 @@ import type { InvestVerdict } from "@/lib/diligence/types";
  * the model couldn't run (`available: false`) it shows a clear placeholder
  * rather than a fake invest/pass.
  */
-export default function VerdictPopup({ verdict }: { verdict: InvestVerdict }) {
+export default function VerdictPopup({
+  verdict,
+  active = false,
+}: {
+  verdict: InvestVerdict | null;
+  active?: boolean;
+}) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
+
+  if (!verdict) {
+    if (!active) return null;
+    return (
+      <div className="fade-up flex items-center gap-4 rounded-3xl border border-ink/15 bg-paper-2/70 px-6 py-5 backdrop-blur">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+            Investment model
+          </p>
+          <span className="mt-2 inline-block h-4 w-32 animate-pulse rounded bg-ink/10" />
+        </div>
+      </div>
+    );
+  }
 
   const pending = !verdict.available;
   const invest = verdict.invest;

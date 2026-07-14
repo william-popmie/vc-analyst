@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import VerdictPopup from "@/components/features/form/VerdictPopup";
 import DeckFeedbackPanel from "@/components/features/form/DeckFeedbackPanel";
 import ScorecardPanel from "@/components/features/form/ScorecardPanel";
-import ResearchTrail from "@/components/features/analyze/ResearchLog";
+import { ResearchFindings, WebSearch } from "@/components/features/analyze/ResearchLog";
 import DueDiligenceFormView from "@/components/features/form/DueDiligenceFormView";
 import type { AnalysisState } from "./streamState";
 
@@ -17,8 +17,8 @@ export interface ReportSection {
   id: string;
   /** Label shown in the chapters nav. */
   label: string;
-  /** Gate a section until it has real data to show. */
-  available: (state: AnalysisState) => boolean;
+  /** Gate a section until it has real data to show, or the run is still active (skeleton). */
+  available: (state: AnalysisState, active: boolean) => boolean;
   render: (state: AnalysisState, active: boolean) => ReactNode;
 }
 
@@ -26,13 +26,13 @@ export const REPORT_SECTIONS: ReportSection[] = [
   {
     id: "verdict",
     label: "Verdict",
-    available: (s) => !!s.verdict,
-    render: (s) => <VerdictPopup verdict={s.verdict!} />,
+    available: (s, active) => active || !!s.verdict,
+    render: (s, active) => <VerdictPopup verdict={s.verdict} active={active} />,
   },
   {
     id: "feedback",
     label: "Deck feedback",
-    available: (s) => s.deckFeedback.length > 0,
+    available: (s, active) => active || s.deckFeedback.length > 0,
     render: (s, active) => <DeckFeedbackPanel items={s.deckFeedback} active={active} />,
   },
   {
@@ -42,10 +42,16 @@ export const REPORT_SECTIONS: ReportSection[] = [
     render: (s, active) => <ScorecardPanel form={s.form} active={active} />,
   },
   {
-    id: "research",
-    label: "Research",
-    available: (s) => s.searches.length > 0,
-    render: (s, active) => <ResearchTrail state={s} active={active} />,
+    id: "findings",
+    label: "Research Findings",
+    available: (s, active) => active || !!s.notes,
+    render: (s, active) => <ResearchFindings state={s} active={active} />,
+  },
+  {
+    id: "search",
+    label: "Web Search",
+    available: (s, active) => active || s.searches.length > 0,
+    render: (s) => <WebSearch state={s} />,
   },
   {
     id: "document",
