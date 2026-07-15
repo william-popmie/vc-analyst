@@ -61,6 +61,7 @@ export async function scoreCard({
   const text = await getProvider(provider).generateStream({
     system: buildScorecardSystemPrompt(playbook, deckText),
     user: buildScorecardUserPrompt(research),
+    tier: "economy", // seven bounded ratings + one integer — Haiku handles this reliably
     onUsage: (usage) => emit({ type: "usage", stage: "scorecard", usage, costUsd: costOf(usage) }),
     signal,
   });
