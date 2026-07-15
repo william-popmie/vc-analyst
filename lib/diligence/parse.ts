@@ -14,6 +14,21 @@ export interface ParsedField {
 
 const VALID_SOURCES = new Set<FieldSource>(["deck", "web", "inferred", "unknown"]);
 
+/**
+ * Confidence ranking of a field's source, highest first. "deck" and "web" are
+ * peers — both are grounded in real material, and the pipeline deliberately
+ * lets research (web) correct or enrich a deck claim (and vice versa on a
+ * later pass), so neither should be blocked from overwriting the other.
+ * "inferred" is the model's own ungrounded reasoning, so it must not silently
+ * downgrade an already-filled "deck"/"web" field (see `applyField`).
+ */
+const SOURCE_PRIORITY: Record<FieldSource, number> = {
+  deck: 2,
+  web: 2,
+  inferred: 1,
+  unknown: 0,
+};
+
 /** Parse one NDJSON line into a field, tolerating fences/whitespace. */
 export function parseFieldLine(line: string): ParsedField | null {
   const trimmed = line.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
@@ -56,7 +71,10 @@ function normalizeFounders(value: unknown): Founder[] {
 
 /**
  * Apply a parsed field onto the form (mutates). Returns true if the key was
- * recognized and written — unknown keys are ignored defensively.
+ * recognized and written; false for an unrecognized key or a write skipped
+ * because it would downgrade an already-filled field to a lower-confidence
+ * source (see `SOURCE_PRIORITY`). Either way the caller should not emit a
+ * `field` event for a false return.
  */
 export function applyField(
   form: DueDiligenceForm,
@@ -89,6 +107,14 @@ export function applyField(
   if (node && field && field in node) {
     const target = node[field];
     if (target && typeof target === "object" && "value" in target) {
+      const current = target as { value?: unknown; source?: FieldSource };
+      // Don't let a later stage silently downgrade an already-filled field to a
+      // lower-confidence source (e.g. a real "deck" fact re-tagged "inferred"
+      // because a weaker model just paraphrased it) — only upgrades/corrections
+      // and same-tier re-emissions are allowed to overwrite.
+      if (current.value && current.source && SOURCE_PRIORITY[source] < SOURCE_PRIORITY[current.source]) {
+        return false;
+      }
       node[field] = { value: str(value), source };
       return true;
     }

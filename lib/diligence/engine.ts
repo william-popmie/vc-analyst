@@ -71,6 +71,7 @@ class PipelineDiligenceEngine implements DiligenceEngine {
       provider,
       system: buildCompleteSystemPrompt(input.playbook, input.deckText),
       user: buildCompleteUserPrompt(researchResult),
+      tier: "economy", // gap-filling from research notes doesn't need full Sonnet judgment
       form,
       emit,
       stage: "complete",

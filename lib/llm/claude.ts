@@ -11,8 +11,8 @@ import type {
 } from "./types";
 
 // All Anthropic-specific knobs live here and nowhere else.
-const MAX_CONTINUATIONS = 6; // safety cap for the server-side web-search loop
-const MAX_SEARCHES = 5; // research breadth — enough to chase each missing fact without runaway cost
+const MAX_CONTINUATIONS = 3; // safety cap for the server-side web-search loop
+const MAX_SEARCHES = 3; // research breadth — enough to chase each missing fact without runaway cost
 const RESEARCH_MAX_TOKENS = 5000;
 const WRITE_MAX_TOKENS = 16000;
 const OCR_MAX_TOKENS = 16000;
