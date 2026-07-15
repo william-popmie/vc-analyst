@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 const stats = [
-  { value: "6 / 250", label: "Program rank" },
+  { value: "Ranked top 6", label: "Program rank of 250+" },
   { value: "800+", label: "Decks reviewed" },
-  { value: "~70", label: "Per week" },
+  { value: "Custom-trained AI model", label: "Based on 800+ real VC verdicts" },
 ];
 
 export default function Hero() {
@@ -24,11 +24,7 @@ export default function Hero() {
 
       <p className="fade-up mt-6 max-w-xl text-lg leading-relaxed text-muted" style={{ animationDelay: "0.15s" }}>
         You&apos;ll get the read a VC actually gives your deck: what&apos;s strong, what&apos;s
-        missing, and how you look to an investor who Googles you first:{" "}
-        <Link href="/playbook" className="font-medium text-ink underline decoration-marker decoration-2 underline-offset-4 transition-colors hover:decoration-accent">
-          the critique a partner would write
-        </Link>
-        , not the pitch you&apos;d write.
+        missing, and how you look to an investor who Googles you first.
       </p>
 
       <div className="fade-up mt-8 flex flex-wrap gap-3" style={{ animationDelay: "0.25s" }}>

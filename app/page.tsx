@@ -30,10 +30,8 @@ export default function Home() {
             Not a summary. Due diligence.
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-lg leading-relaxed text-muted">
-            I&apos;m not summarizing your startup; you already know your startup. I&apos;m
-            showing you <span className="marker">the part you never get to see</span>: what a
-            VC quietly checks, what they don&apos;t buy, and the call they&apos;d make before
-            you&apos;re ever in the room.
+            I&apos;m not summarizing your startup, you already know your startup! I&apos;m
+            showing you <span className="marker">the part you never get to see</span>: everything a VC does behind the scenes when they review your pitchdeck.
           </p>
         </div>
         <SampleMemoPreview />
