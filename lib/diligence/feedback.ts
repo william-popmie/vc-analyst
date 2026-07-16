@@ -1,5 +1,5 @@
 import { getProvider } from "@/lib/llm";
-import type { Provider } from "@/lib/llm";
+import { deriveProvider } from "@/lib/config";
 import { costOf } from "@/lib/llm/pricing";
 import {
   buildDeckFeedbackSystemPrompt,
@@ -14,7 +14,8 @@ import type {
 } from "./types";
 
 interface ReviewArgs {
-  provider: Provider;
+  /** Concrete model id to run on; provider is derived from the name. */
+  model: string;
   deckText: string;
   research: ResearchResult;
   playbook: string;
@@ -56,7 +57,7 @@ function parseFeedbackLine(line: string): DeckFeedbackItem | null {
  * founders) as well as what's literally on the slides.
  */
 export async function reviewDeck({
-  provider,
+  model,
   deckText,
   research,
   playbook,
@@ -73,10 +74,10 @@ export async function reviewDeck({
     emit({ type: "feedback", item });
   };
 
-  await getProvider(provider).generateStream({
+  await getProvider(deriveProvider(model)).generateStream({
+    model,
     system: buildDeckFeedbackSystemPrompt(playbook, deckText),
     user: buildDeckFeedbackUserPrompt(research),
-    tier: "economy", // deck critique against a checklist — Haiku is sufficient
     onText: (delta) => {
       buffer += delta;
       let newline: number;
