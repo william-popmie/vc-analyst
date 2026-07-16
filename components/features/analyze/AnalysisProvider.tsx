@@ -92,6 +92,7 @@ export default function AnalysisProvider({ children }: { children: ReactNode }) 
       setStatus("loading");
       setError("");
       dispatch({ type: "reset" });
+      router.push(`/due-diligence/${id}`);
 
       let working = initialState();
 
